@@ -128,30 +128,29 @@ const Invoices = () => {
     
     return matchesSearch && matchesStatus;
   });
-
   // DataGrid columns configuration
   const columns = [
     {
       key: 'invoiceId',
       header: 'Mã hóa đơn',
       width: '120px',
-      render: (value, invoice) => `#HD${invoice.invoiceId}`
+      render: (invoice) => `#HD${invoice.invoiceId}`
     },
     {
       key: 'bookingId',
       header: 'Mã đặt phòng',
       width: '120px',
-      render: (value, invoice) => `#${invoice.bookingId}`
+      render: (invoice) => `#${invoice.bookingId}`
     },
     {
       key: 'customerName',
       header: 'Khách hàng',
-      render: (value, invoice) => invoice.customerName
+      render: (invoice) => invoice.customerName
     },
     {
       key: 'roomInfo',
       header: 'Phòng',
-      render: (value, invoice) => (
+      render: (invoice) => (
         <div>
           <div>{invoice.roomNumber}</div>
           <div className={styles.roomType}>{invoice.roomType}</div>
@@ -162,47 +161,37 @@ const Invoices = () => {
       key: 'issueDate',
       header: 'Ngày xuất',
       width: '120px',
-      render: (value, invoice) => invoice.issueDate
+      render: (invoice) => invoice.issueDate
     },
     {
       key: 'totalAmount',
       header: 'Tổng tiền',
       width: '120px',
-      render: (value, invoice) => `${invoice.totalAmount?.toLocaleString('vi-VN')} VNĐ`
+      render: (invoice) => `${invoice.totalAmount?.toLocaleString('vi-VN')} VNĐ`
     },
     {
       key: 'status',
       header: 'Trạng thái',
       width: '120px',
-      render: (value, invoice) => (
+      render: (invoice) => (
         <StatusBadge 
           status={invoice.status} 
           variant={getStatusVariant(invoice.status)}
         />
-      )
+      )    }
+  ];
+
+  // Actions for DataGrid
+  const actions = [
+    {
+      icon: Eye,
+      label: 'Xem chi tiết',
+      onClick: handleViewInvoice
     },
     {
-      key: 'actions',
-      header: 'Thao tác',
-      width: '120px',
-      render: (value, invoice) => (
-        <div className={styles.actions}>
-          <button 
-            onClick={() => handleViewInvoice(invoice)} 
-            className={styles.viewButton}
-            title="Xem chi tiết"
-          >
-            <Eye size={16} />
-          </button>
-          <button 
-            onClick={() => handlePrintInvoice(invoice)} 
-            className={styles.printButton}
-            title="In hóa đơn"
-          >
-            <FileText size={16} />
-          </button>
-        </div>
-      )
+      icon: FileText,
+      label: 'In hóa đơn',
+      onClick: handlePrintInvoice
     }
   ];
 
@@ -253,10 +242,10 @@ const Invoices = () => {
       </div>
 
       {/* Data Grid */}
-      <div className={styles.content}>
-        <DataGrid
+      <div className={styles.content}>        <DataGrid
           data={filteredInvoices}
           columns={columns}
+          actions={actions}
           loading={loading}
           emptyMessage="Không tìm thấy hóa đơn nào"
         />

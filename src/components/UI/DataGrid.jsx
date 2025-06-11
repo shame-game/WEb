@@ -6,6 +6,7 @@ const DataGrid = ({
   title,
   data = [],
   columns = [],
+  actions = [],
   loading = false,
   onAdd,
   onEdit,
@@ -13,7 +14,8 @@ const DataGrid = ({
   onView,
   searchable = true,
   sortable = true,
-  pageSize = 10
+  pageSize = 10,
+  emptyMessage = 'No data available'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -93,14 +95,12 @@ const DataGrid = ({
   }
   return (
     <div className={styles.dataGrid}>      {/* Table */}
-      <div className={styles.tableContainer}>
-        {sortedData.length === 0 ? (
+      <div className={styles.tableContainer}>        {sortedData.length === 0 ? (
           <div className={styles.empty}>
-            {searchTerm ? 'No matching results found' : 'No data available'}
+            {searchTerm ? 'No matching results found' : emptyMessage}
           </div>
         ) : (
-          <table className={styles.table}>
-            <thead className={styles.tableHeader}>
+          <table className={styles.table}>            <thead className={styles.tableHeader}>
               <tr>
                 {columns.map((column) => (
                   <th key={column.key} style={{ width: column.width }}>
@@ -116,16 +116,35 @@ const DataGrid = ({
                       column.header
                     )}                  </th>
                 ))}
+                {actions.length > 0 && <th>Thao tác</th>}
               </tr>
             </thead>
             <tbody className={styles.tableBody}>
               {sortedData.map((item, index) => (
-                <tr key={item.id || item.roomTypeId || item.customerId || index}>
+                <tr key={item.id || item.roleId || item.roomTypeId || item.customerId || item.roomId || index}>
                   {columns.map((column) => (
                     <td key={column.key}>
-                      {column.render ? column.render(item[column.key], item) : item[column.key]}
+                      {column.render ? column.render(item) : item[column.key]}
                     </td>
-                  ))}
+                  ))}                  {actions.length > 0 && (
+                    <td>
+                      <div className={styles.actions}>
+                        {actions
+                          .filter(action => !action.condition || action.condition(item))
+                          .map((action, actionIndex) => (
+                          <button
+                            key={actionIndex}
+                            className={`${styles.actionButton} ${action.className || ''}`}
+                            onClick={() => action.onClick(item)}
+                            title={action.label}
+                            disabled={action.disabled && action.disabled(item)}
+                          >
+                            <action.icon size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

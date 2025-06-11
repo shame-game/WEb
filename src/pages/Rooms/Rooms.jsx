@@ -55,15 +55,17 @@ const Rooms = () => {
   };  const handleDelete = async (room) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa phòng "${room.roomNumber}"?`)) {
       try {
-        // API call để xóa room nếu cần
-        // await fetch(`https://quanlyks.onrender.com/api/Room/${room.roomId}`, { method: 'DELETE' });
+        // Remove room from local state
+        setRooms(prevRooms => 
+          prevRooms.filter(r => r.roomId !== room.roomId)
+        );
+        setTotalItems(prevTotal => prevTotal - 1);
         
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Chức năng xóa chưa được triển khai trên API' 
+          message: `Xóa phòng ${room.roomNumber} thành công!` 
         });
-        fetchRooms();
       } catch (error) {
         console.error('Error deleting room:', error);
         setResultPopup({ 
@@ -73,35 +75,45 @@ const Rooms = () => {
         });
       }
     }
-  };  const handleSubmit = async (data) => {
+  };const handleSubmit = async (data) => {
     try {
       if (selectedRoom) {
-        // API call để cập nhật room
-        // await fetch(`https://quanlyks.onrender.com/api/Room/${selectedRoom.roomId}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(data)
-        // });
+        // Update existing room locally
+        const updatedRoom = {
+          ...selectedRoom,
+          ...data,
+          price: parseFloat(data.price)
+        };
+        
+        setRooms(prevRooms => 
+          prevRooms.map(room => 
+            room.roomId === selectedRoom.roomId ? updatedRoom : room
+          )
+        );
+        
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Chức năng cập nhật chưa được triển khai trên API' 
+          message: `Cập nhật phòng ${data.roomNumber} thành công!` 
         });
       } else {
-        // API call để tạo room mới
-        // await fetch('https://quanlyks.onrender.com/api/Room', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(data)
-        // });
+        // Add new room locally
+        const newRoom = {
+          roomId: Date.now(), // Temporary ID
+          ...data,
+          price: parseFloat(data.price)
+        };
+        
+        setRooms(prevRooms => [...prevRooms, newRoom]);
+        setTotalItems(prevTotal => prevTotal + 1);
+        
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Chức năng tạo mới chưa được triển khai trên API' 
+          message: `Thêm phòng ${data.roomNumber} thành công!` 
         });
       }
       setShowModal(false);
-      fetchRooms();
     } catch (error) {
       console.error('Error saving room:', error);
       setResultPopup({ 
@@ -135,7 +147,7 @@ const Rooms = () => {
     {
       key: 'roomInfo',
       label: 'Chi tiết phòng',
-      render: (_, room) => {
+      render: (room) => {
         if (!room) return '-';
         return (
           <div className={styles.roomInfo}>
@@ -153,7 +165,7 @@ const Rooms = () => {
     {
       key: 'roomType',
       label: 'Loại phòng',
-      render: (value, room) => {
+      render: (room) => {
         if (!room) return '-';
         return (
           <div className={styles.roomType}>
@@ -165,7 +177,7 @@ const Rooms = () => {
     {
       key: 'price',
       label: 'Giá phòng',
-      render: (value, room) => {
+      render: (room) => {
         if (!room || !room.price) return '-';
         return (
           <div className={styles.priceInfo}>
@@ -178,44 +190,57 @@ const Rooms = () => {
     {
       key: 'status',
       label: 'Trạng thái',
-      render: (value, room) => {
-        if (!room || !value) return '-';
+      render: (room) => {
+        if (!room || !room.status) return '-';
         return (
           <StatusBadge 
-            status={value} 
-            variant={getStatusVariant(value)}
+            status={room.status} 
+            variant={getStatusVariant(room.status)}
           />
         );
-      }
+      }    }
+  ];
+
+  // Actions for the DataGrid
+  const actions = [
+    {
+      icon: Edit2,
+      label: 'Sửa',
+      onClick: handleEdit
     },
     {
-      key: 'actions',
-      label: 'Thao tác',
-      render: (_, room) => (
-        <div className={styles.actions}>          <button
-            onClick={() => handleEdit(room)}
-            className={styles.editButton}
-            title="Sửa"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(room)}
-            className={styles.deleteButton}
-            title="Xóa"
-          >
-            <Trash2 size={16} />
-          </button>
-          <button
-            className={styles.maintenanceButton}
-            title="Bảo trì"
-          >
-            <Settings size={16} />
-          </button>
-        </div>
-      )
+      icon: Trash2,
+      label: 'Xóa',
+      onClick: handleDelete,
+      className: styles.deleteAction
+    },    {
+      icon: Settings,
+      label: 'Bảo trì',
+      onClick: (room) => {
+        if (window.confirm(`Chuyển phòng ${room.roomNumber} sang trạng thái bảo trì?`)) {
+          const updatedRoom = {
+            ...room,
+            status: 'Maintenance'
+          };
+          
+          setRooms(prevRooms => 
+            prevRooms.map(r => 
+              r.roomId === room.roomId ? updatedRoom : r
+            )
+          );
+          
+          setResultPopup({ 
+            show: true, 
+            type: 'success', 
+            message: `Phòng ${room.roomNumber} đã được chuyển sang trạng thái bảo trì!` 
+          });
+        }
+      },
+      className: styles.maintenanceAction
     }
-  ];  const formFields = [
+  ];
+
+  const formFields = [
     {
       name: 'roomNumber',
       label: 'Số phòng',
@@ -320,6 +345,7 @@ const Rooms = () => {
       </div>      <DataGrid
         data={filteredRooms}
         columns={columns}
+        actions={actions}
         loading={loading}
         emptyMessage="Không tìm thấy phòng nào"
         pagination={{

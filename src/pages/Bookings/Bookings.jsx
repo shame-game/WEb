@@ -23,122 +23,124 @@ const Bookings = () => {
   const [resultPopup, setResultPopup] = useState({ show: false, type: '', message: '' });  const [invoiceData, setInvoiceData] = useState(null);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [invoices, setInvoices] = useState([]);
-
-  // Load initial data from mock data
+  // Load initial data from APIs
   useEffect(() => {
-    setLoading(true);
-    
-    // Transform mock data to match the component's expected structure
-    const transformedBookings = mockBookings.map(booking => ({
-      bookingId: booking.id,
-      customerId: booking.customerId,
-      roomId: booking.roomId,
-      checkInTime: booking.checkInDate + 'T14:00:00',
-      checkOutTime: booking.checkOutDate + 'T12:00:00',
-      status: booking.status,
-      customer: {
+    loadBookings();
+    loadRooms();
+    loadCustomers();
+    loadRoomTypes();
+  }, []);
+
+  const loadBookings = async () => {
+    try {
+      setLoading(true);
+      // For now, use mock data since no Booking API is available
+      const transformedBookings = mockBookings.map(booking => ({
+        bookingId: booking.id,
         customerId: booking.customerId,
-        name: booking.customerName
-      },
-      room: {
         roomId: booking.roomId,
-        roomNumber: booking.roomNumber,
-        roomTypeName: booking.roomTypeName
-      },
-      totalAmount: booking.totalAmount,
-      specialRequests: booking.specialRequests
-    }));
+        checkInTime: booking.checkInDate + 'T14:00:00',
+        checkOutTime: booking.checkOutDate + 'T12:00:00',
+        status: booking.status,
+        customer: {
+          customerId: booking.customerId,
+          name: booking.customerName
+        },
+        room: {
+          roomId: booking.roomId,
+          roomNumber: booking.roomNumber,
+          roomTypeName: booking.roomTypeName
+        },
+        totalAmount: booking.totalAmount,
+        specialRequests: booking.specialRequests
+      }));
+      setBookings(transformedBookings);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const transformedRoomTypes = mockRoomTypes.map(type => ({
-      roomTypeId: type.id,
-      roomTypeName: type.name,
-      description: type.description,
-      basePrice: type.basePrice
-    }));
+  const loadRooms = async () => {
+    try {
+      const response = await fetch('https://quanlyks.onrender.com/api/Room');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setRooms(data || []);
+    } catch (error) {
+      console.error('Failed to load rooms:', error);
+      // Fallback to mock data
+      const transformedRooms = mockRooms.map(room => ({
+        roomId: room.id,
+        roomNumber: room.roomNumber,
+        roomTypeId: room.roomTypeId,
+        roomType: room.roomTypeName,
+        price: room.price,
+        status: room.status
+      }));
+      setRooms(transformedRooms);
+    }
+  };
 
-    const transformedRooms = mockRooms.map(room => ({
-      roomId: room.id,
-      roomNumber: room.roomNumber,
-      roomTypeId: room.roomTypeId,
-      roomTypeName: room.roomTypeName,
-      price: room.price,
-      status: room.status
-    }));
+  const loadCustomers = async () => {
+    try {
+      const response = await fetch('https://quanlyks.onrender.com/api/Customer');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Failed to load customers:', error);
+      // Fallback to mock data
+      const transformedCustomers = mockCustomers.map(customer => ({
+        customerId: customer.id,
+        fullName: customer.fullName,
+        email: customer.email,
+        phoneNumber: customer.phone,
+        address: customer.address
+      }));
+      setCustomers(transformedCustomers);
+    }
+  };
 
-    const transformedCustomers = mockCustomers.map(customer => ({
-      customerId: customer.id,
-      fullName: customer.fullName,
-      email: customer.email,
-      phone: customer.phone,
-      address: customer.address
-    }));    setBookings(transformedBookings);
-    setRoomTypes(transformedRoomTypes);
-    setRooms(transformedRooms);
-    setCustomers(transformedCustomers);
-    setInvoices(mockInvoices);
-    
-    setLoading(false);
-  }, []);  const handleFormSubmit = async (formData) => {
-    setLoading(true);
+  const loadRoomTypes = async () => {
+    try {
+      const response = await fetch('https://quanlyks.onrender.com/api/RoomType');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setRoomTypes(data || []);
+    } catch (error) {
+      console.error('Failed to load room types:', error);
+      // Fallback to mock data
+      const transformedRoomTypes = mockRoomTypes.map(type => ({
+        roomTypeId: type.id,
+        roomTypeName: type.name,
+        description: type.description,
+        basePrice: type.basePrice
+      }));
+      setRoomTypes(transformedRoomTypes);
+    }  };
 
+  const handleFormSubmit = async (formData) => {
     try {
       if (selectedBooking) {
-        // Update existing booking
-        const updatedBooking = {
-          ...selectedBooking,
-          customerId: parseInt(formData.customerId, 10),
-          roomId: parseInt(formData.roomId, 10),
-          checkInTime: formData.checkInTime,
-          checkOutTime: formData.checkOutTime,
-          status: formData.status,
-          specialRequests: formData.specialRequests,
-          // Update nested objects
-          customer: customers.find(c => c.customerId === parseInt(formData.customerId, 10)),
-          room: rooms.find(r => r.roomId === parseInt(formData.roomId, 10))
-        };
-
-        setBookings(prev => prev.map(booking => 
-          booking.bookingId === selectedBooking.bookingId ? updatedBooking : booking
-        ));
-          setResultPopup({ 
-          show: true, 
-          type: 'success', 
-          message: 'Đặt phòng đã được cập nhật thành công!' 
-        });
+        // Update existing booking - API not implemented
+        alert('Chức năng cập nhật đặt phòng chưa được triển khai trên API');
       } else {
-        // Create new booking
-        const newBooking = {
-          bookingId: Math.max(...bookings.map(b => b.bookingId), 0) + 1,
-          customerId: parseInt(formData.customerId, 10),
-          roomId: parseInt(formData.roomId, 10),
-          checkInTime: formData.checkInTime,
-          checkOutTime: formData.checkOutTime,
-          status: formData.status || 'confirmed',
-          specialRequests: formData.specialRequests || '',
-          customer: customers.find(c => c.customerId === parseInt(formData.customerId, 10)),
-          room: rooms.find(r => r.roomId === parseInt(formData.roomId, 10)),
-          totalAmount: 0 // Calculate based on room price and duration
-        };
-
-        setBookings(prev => [...prev, newBooking]);
-          setResultPopup({ 
-          show: true, 
-          type: 'success', 
-          message: 'Đặt phòng đã được tạo thành công!' 
-        });
+        // Create new booking - API not implemented
+        alert('Chức năng tạo đặt phòng mới chưa được triển khai trên API');
       }
       
       setShowModal(false);
       setSelectedBooking(null);
-    } catch (error) {      setResultPopup({ 
-        show: true, 
-        type: 'error', 
-        message: 'Đã xảy ra lỗi khi xử lý đặt phòng.' 
-      });
-    } finally {
-      setLoading(false);
+      // Reload bookings if API was implemented
+      // await loadBookings();
+    } catch (error) {
+      console.error('Failed to save booking:', error);
+      alert('Đã xảy ra lỗi khi xử lý đặt phòng.');
     }
-  };  const handleDelete = (bookingId) => {
+  };const handleDelete = (bookingId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa đặt phòng này không?')) {
       setLoading(true);
       
@@ -318,12 +320,12 @@ const Bookings = () => {
       key: 'bookingId',
       header: 'Mã đặt phòng',
       width: '80px',
-      render: (value, booking) => `#${booking.bookingId}`
+      render: (booking) => `#${booking.bookingId}`
     },
     {
       key: 'customer',
       header: 'Khách hàng',
-      render: (value, booking) => (
+      render: (booking) => (
         <div className={styles.customerInfo}>
           <div className={styles.customerName}>
             {booking.customer?.name || `Mã KH: ${booking.customerId}`}
@@ -334,7 +336,7 @@ const Bookings = () => {
     {
       key: 'room',
       header: 'Phòng',
-      render: (value, booking) => (
+      render: (booking) => (
         <div className={styles.roomInfo}>
           <div className={styles.roomNumber}>
             <Bed size={16} />
@@ -349,7 +351,7 @@ const Bookings = () => {
     {
       key: 'dates',
       header: 'Ngày nhận / Trả phòng',
-      render: (value, booking) => (
+      render: (booking) => (
         <div className={styles.dateInfo}>
           <div className={styles.checkIn}>
             <Calendar size={14} />
@@ -366,7 +368,7 @@ const Bookings = () => {
       key: 'status',
       header: 'Trạng thái',
       width: '120px',
-      render: (value, booking) => (
+      render: (booking) => (
         <StatusBadge 
           status={booking.status} 
           variant={getStatusVariant(booking.status)}
@@ -377,47 +379,30 @@ const Bookings = () => {
       key: 'totalAmount',
       header: 'Tổng tiền',
       width: '100px',
-      render: (value, booking) => 
-        booking.totalAmount ? `${booking.totalAmount.toLocaleString('vi-VN')} VNĐ` : '-'
-    },    {
-      key: 'actions',
-      header: 'Thao tác',
-      width: '150px',
-      render: (value, booking) => (
-        <div className={styles.actions}>
-          {!booking.hasInvoice && (
-            <>
-              <button 
-                onClick={() => handleEdit(booking)} 
-                className={styles.editButton}
-                title="Chỉnh sửa đặt phòng"
-              >
-                <Edit2 size={16} />
-              </button>
-              <button 
-                onClick={() => handleDelete(booking.bookingId)} 
-                className={styles.deleteButton}
-                title="Xóa đặt phòng"
-              >
-                <Trash2 size={16} />
-              </button>
-            </>
-          )}
-          <button 
-            onClick={() => handleExportInvoice(booking)} 
-            className={styles.exportButton}
-            title={booking.hasInvoice ? "Xem hóa đơn" : "Xuất hóa đơn"}
-            disabled={booking.hasInvoice}
-          >
-            <FileText size={16} />
-          </button>
-          {booking.hasInvoice && (
-            <span className={styles.invoicedBadge} title="Đã xuất hóa đơn">
-              ✓
-            </span>
-          )}
-        </div>
-      )
+      render: (booking) => 
+        booking.totalAmount ? `${booking.totalAmount.toLocaleString('vi-VN')} VNĐ` : '-'    }
+  ];
+
+  // Actions for DataGrid
+  const actions = [
+    {
+      icon: Edit2,
+      label: 'Sửa',
+      onClick: handleEdit,
+      condition: (booking) => !booking.hasInvoice
+    },
+    {
+      icon: Trash2,
+      label: 'Xóa',
+      onClick: (booking) => handleDelete(booking.bookingId),
+      className: styles.deleteAction,
+      condition: (booking) => !booking.hasInvoice
+    },
+    {
+      icon: FileText,
+      label: 'Xuất hóa đơn',
+      onClick: handleExportInvoice,
+      condition: (booking) => !booking.hasInvoice
     }
   ];
 
@@ -489,13 +474,11 @@ const Bookings = () => {
           </select>
         </div>
       </div>{/* Data Grid */}
-      <div className={styles.content}>
-        <DataGrid
+      <div className={styles.content}>        <DataGrid
           data={filteredBookings}
           columns={columns}
+          actions={actions}
           loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
           emptyMessage="Không tìm thấy đặt phòng nào"
         />
       </div>

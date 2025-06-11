@@ -104,12 +104,11 @@ const RoomTypes = () => {
         type: 'error', 
         message: 'Có lỗi xảy ra khi lưu thông tin loại phòng. Vui lòng thử lại.' 
       });
-    }  };
-  const columns = [
+    }  };  const columns = [
     {
       key: 'roomTypeInfo',
       label: 'Thông tin loại phòng',
-      render: (_, roomType) => {
+      render: (roomType) => {
         if (!roomType) return '-';        const getIconForRoomType = (name) => {
           const roomTypeName = (name || '').toLowerCase();
           if (roomTypeName.includes('vip') || roomTypeName.includes('deluxe') || roomTypeName.includes('suite') || roomTypeName.includes('luxury')) {
@@ -142,7 +141,7 @@ const RoomTypes = () => {
     },    {
       key: 'rooms',
       label: 'Số phòng',
-      render: (value, roomType) => {
+      render: (roomType) => {
         if (!roomType) return '-';
         const roomCount = roomType.rooms ? roomType.rooms.length : 0;
         return (
@@ -156,29 +155,21 @@ const RoomTypes = () => {
             </div>
           </div>
         );
-      }
+      }    }
+  ];
+
+  // Actions for the DataGrid
+  const actions = [
+    {
+      icon: Edit2,
+      label: 'Sửa',
+      onClick: handleEdit
     },
     {
-      key: 'actions',
-      label: 'Thao tác',
-      render: (_, roomType) => (
-        <div className={styles.actions}>
-          <button
-            onClick={() => handleEdit(roomType)}
-            className={styles.editButton}
-            title="Sửa"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(roomType)}
-            className={styles.deleteButton}
-            title="Xóa"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      )
+      icon: Trash2,
+      label: 'Xóa',
+      onClick: handleDelete,
+      className: styles.deleteAction
     }
   ];
   const formFields = [
@@ -219,10 +210,9 @@ const RoomTypes = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
-
-      <DataGrid        data={filteredRoomTypes}
+      </div>      <DataGrid        data={filteredRoomTypes}
         columns={columns}
+        actions={actions}
         loading={loading}
         emptyMessage="Không tìm thấy loại phòng nào"
       />

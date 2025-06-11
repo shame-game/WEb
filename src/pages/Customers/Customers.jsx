@@ -18,8 +18,7 @@ const Customers = () => {
   const itemsPerPage = 10;
   useEffect(() => {
     fetchCustomers();
-  }, []);
-  const fetchCustomers = async () => {
+  }, []);  const fetchCustomers = async () => {
     try {
       setLoading(true);
       const response = await fetch('https://quanlyks.onrender.com/api/Customer');
@@ -89,11 +88,10 @@ const Customers = () => {
       console.error('Error saving customer:', error);
       throw error;
     }
-  };
-  const columns = [
+  };  const columns = [
     {      key: 'fullName',
       label: 'Tên người dùng',
-      render: (_, customer) => {
+      render: (customer) => {
         if (!customer) return '-';
         return (
           <div className={styles.customerInfo}>
@@ -108,11 +106,10 @@ const Customers = () => {
           </div>
         );
       }
-    },
-    {
+    },    {
       key: 'contact',
       label: 'Thông tin liên hệ',
-      render: (_, customer) => {
+      render: (customer) => {
         if (!customer) return '-';
         return (
           <div className={styles.contactInfo}>
@@ -130,7 +127,7 @@ const Customers = () => {
     {
       key: 'address',
       label: 'Địa chỉ',
-      render: (_, customer) => {
+      render: (customer) => {
         if (!customer) return '-';
         return (
           <div className={styles.addressInfo}>
@@ -142,7 +139,7 @@ const Customers = () => {
     },    {
       key: 'username',
       label: 'Tên đăng nhập',
-      render: (_, customer) => {
+      render: (customer) => {
         if (!customer) return '-';
         return (
           <div className={styles.usernameInfo}>
@@ -154,37 +151,13 @@ const Customers = () => {
     {
       key: 'role',
       label: 'Vai trò',
-      render: (_, customer) => {
+      render: (customer) => {
         if (!customer) return '-';
         return (
           <StatusBadge 
             status={customer.roleName || 'User'} 
             variant={customer.roleName === 'Admin' ? 'success' : 'secondary'} 
           />
-        );
-      }
-    },
-    {
-      key: 'actions',
-      label: 'Hành động',
-      render: (_, customer) => {
-        if (!customer) return '-';
-        return (
-          <div className={styles.actions}>
-            <button
-              onClick={() => handleEdit(customer)}
-              className={styles.editButton}
-              title="Sửa"
-            >
-              <Edit2 size={16} />
-            </button>
-            <button              onClick={() => handleDelete(customer)}
-              className={styles.deleteButton}
-              title="Xóa"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
         );
       }
     }
@@ -235,6 +208,21 @@ const Customers = () => {
       defaultValue: 'User'
     }  ];
 
+  // Actions for the DataGrid
+  const actions = [
+    {
+      icon: Edit2,
+      label: 'Sửa',
+      onClick: handleEdit
+    },
+    {
+      icon: Trash2,
+      label: 'Xóa',
+      onClick: handleDelete,
+      className: styles.deleteAction
+    }
+  ];
+
   // Filter customers based on search term
   const filteredCustomers = customers.filter(customer => {
     if (!searchTerm) return true;
@@ -268,11 +256,10 @@ const Customers = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
-
-      <DataGrid
+      </div>      <DataGrid
         data={filteredCustomers}
         columns={columns}
+        actions={actions}
         loading={loading}
         emptyMessage="Không tìm thấy người dùng nào"
         pagination={{
