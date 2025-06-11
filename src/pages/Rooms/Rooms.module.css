@@ -238,6 +238,31 @@
   color: #6B7280;
 }
 
+/* Price Info */
+.priceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.price {
+  font-weight: 600;
+  color: var(--success-color);
+  font-size: 1rem;
+}
+
+.priceUnit {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Room ID */
+.roomId {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .rooms {

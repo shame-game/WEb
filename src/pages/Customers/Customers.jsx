@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, User, Phone, Mail, MapPin } from 'lucide-react';
-import { customerService } from '../../services';
-import { customerValidationSchema } from '../../utils/validationSchemas';
 import DataGrid from '../../components/UI/DataGrid';
 import Modal from '../../components/UI/Modal';
 import Form from '../../components/UI/Form';
@@ -18,72 +16,30 @@ const Customers = () => {
   const [totalItems, setTotalItems] = useState(0);
 
   const itemsPerPage = 10;
-
   useEffect(() => {
     fetchCustomers();
-  }, [currentPage, searchTerm]);
-
+  }, []);
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const params = {
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchTerm
-      };
-      const response = await customerService.getAll(params);
-      setCustomers(response.data.items || response.data);
-      setTotalItems(response.data.total || response.data.length);
+      const response = await fetch('https://quanlyks.onrender.com/api/Customer');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCustomers(data || []);
+      setTotalItems(data.length || 0);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      // Mock data for development
-      const mockData = generateMockCustomers();
-      setCustomers(mockData);
-      setTotalItems(mockData.length);
+      // Fallback to empty array on error
+      setCustomers([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
   };
-
-  const generateMockCustomers = () => [
-    {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@email.com',
-      phoneNumber: '+1234567890',
-      address: '123 Main St, City, State',
-      dateOfBirth: '1985-06-15',
-      nationalId: 'ID123456789',
-      isActive: true,
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: 2,
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane.smith@email.com',
-      phoneNumber: '+1234567891',
-      address: '456 Oak Ave, City, State',
-      dateOfBirth: '1990-03-22',
-      nationalId: 'ID987654321',
-      isActive: true,
-      createdAt: '2024-01-10T14:20:00Z'
-    },
-    {
-      id: 3,
-      firstName: 'Robert',
-      lastName: 'Johnson',
-      email: 'robert.johnson@email.com',
-      phoneNumber: '+1234567892',
-      address: '789 Pine Rd, City, State',
-      dateOfBirth: '1978-11-08',
-      nationalId: 'ID456789123',
-      isActive: false,
-      createdAt: '2024-01-05T09:15:00Z'
-    }
-  ];
-
   const handleCreate = () => {
     setSelectedCustomer(null);
     setShowModal(true);
@@ -93,25 +49,39 @@ const Customers = () => {
     setSelectedCustomer(customer);
     setShowModal(true);
   };
-
   const handleDelete = async (customer) => {
-    if (window.confirm(`Are you sure you want to delete customer "${customer.firstName} ${customer.lastName}"?`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${customer.fullName}"?`)) {
       try {
-        await customerService.delete(customer.id);
+        // API call để xóa customer nếu cần
+        // await fetch(`https://quanlyks.onrender.com/api/Customer/${customer.customerId}`, { method: 'DELETE' });
+        
+        // Tạm thời chỉ refresh dữ liệu
         fetchCustomers();
+        alert('Chức năng xóa chưa được triển khai trên API');
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Error deleting customer. Please try again.');
+        alert('Lỗi khi xóa người dùng. Vui lòng thử lại.');
       }
     }
   };
-
   const handleSubmit = async (data) => {
     try {
       if (selectedCustomer) {
-        await customerService.update(selectedCustomer.id, data);
+        // API call để cập nhật customer
+        // await fetch(`https://quanlyks.onrender.com/api/Customer/${selectedCustomer.customerId}`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
+        alert('Chức năng cập nhật chưa được triển khai trên API');
       } else {
-        await customerService.create(data);
+        // API call để tạo customer mới
+        // await fetch('https://quanlyks.onrender.com/api/Customer', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
+        alert('Chức năng tạo mới chưa được triển khai trên API');
       }
       setShowModal(false);
       fetchCustomers();
@@ -121,21 +91,19 @@ const Customers = () => {
     }
   };
   const columns = [
-    {
-      key: 'fullName',
-      label: 'Tên khách hàng',
+    {      key: 'fullName',
+      label: 'Tên người dùng',
       render: (_, customer) => {
         if (!customer) return '-';
         return (
           <div className={styles.customerInfo}>
             <div className={styles.customerIcon}>
               <User size={20} />
-            </div>
-            <div>
+            </div>            <div>
               <div className={styles.customerName}>
                 {customer.fullName || 'Không có tên'}
               </div>
-              <div className={styles.customerId}>ID: {customer.identityCard || customer.nationalId || 'N/A'}</div>
+              <div className={styles.customerId}>ID: {customer.customerId || 'N/A'}</div>
             </div>
           </div>
         );
@@ -151,10 +119,9 @@ const Customers = () => {
             <div className={styles.contactItem}>
               <Mail size={14} />
               <span>{customer.email || 'N/A'}</span>
-            </div>
-            <div className={styles.contactItem}>
+            </div>            <div className={styles.contactItem}>
               <Phone size={14} />
-              <span>{customer.phone || customer.phoneNumber || 'N/A'}</span>
+              <span>{customer.phoneNumber || 'N/A'}</span>
             </div>
           </div>
         );
@@ -172,18 +139,28 @@ const Customers = () => {
           </div>
         );
       }
-    },
-    {
-      key: 'dateOfBirth',
-      label: 'Ngày sinh',
-      render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : 'N/A'    },
-    {
-      key: 'status',
-      label: 'Trạng thái',
+    },    {
+      key: 'username',
+      label: 'Tên đăng nhập',
       render: (_, customer) => {
         if (!customer) return '-';
         return (
-          <StatusBadge status={customer.status || customer.isActive ? 'active' : 'inactive'} />
+          <div className={styles.usernameInfo}>
+            <span>{customer.username || 'N/A'}</span>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'role',
+      label: 'Vai trò',
+      render: (_, customer) => {
+        if (!customer) return '-';
+        return (
+          <StatusBadge 
+            status={customer.roleName || 'User'} 
+            variant={customer.roleName === 'Admin' ? 'success' : 'secondary'} 
+          />
         );
       }
     },
@@ -211,8 +188,7 @@ const Customers = () => {
         );
       }
     }
-  ];
-  const formFields = [
+  ];  const formFields = [
     {
       name: 'fullName',
       label: 'Họ và tên',
@@ -228,7 +204,7 @@ const Customers = () => {
       placeholder: 'Nhập địa chỉ email'
     },
     {
-      name: 'phone',
+      name: 'phoneNumber',
       label: 'Số điện thoại',
       type: 'tel',
       required: true,
@@ -242,53 +218,52 @@ const Customers = () => {
       placeholder: 'Nhập địa chỉ đầy đủ'
     },
     {
-      name: 'dateOfBirth',
-      label: 'Ngày sinh',
-      type: 'date',
-      required: true
-    },
-    {
-      name: 'identityCard',
-      label: 'CMND/CCCD',
-      type: 'text',      required: true,
-      placeholder: 'Nhập số CMND/CCCD'
-    },
-    {
-      name: 'nationality',
-      label: 'Quốc tịch',
+      name: 'username',
+      label: 'Tên đăng nhập',
       type: 'text',
-      placeholder: 'Nhập quốc tịch'
+      required: true,
+      placeholder: 'Nhập tên đăng nhập'
     },
     {
-      name: 'status',
-      label: 'Trạng thái hoạt động',
+      name: 'roleName',
+      label: 'Vai trò',
       type: 'select',
       options: [
-        { value: 'ACTIVE', label: 'Hoạt động' },
-        { value: 'INACTIVE', label: 'Không hoạt động' }
+        { value: 'User', label: 'Người dùng' },
+        { value: 'Admin', label: 'Quản trị viên' }
       ],
-      defaultValue: 'ACTIVE'
-    }
-  ];
+      defaultValue: 'User'
+    }  ];
+
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter(customer => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      customer.fullName?.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower) ||
+      customer.phoneNumber?.toLowerCase().includes(searchLower) ||
+      customer.username?.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <div className={styles.customers}>
-      <div className={styles.header}>
-        <div>
-          <h1>Quản lý khách hàng</h1>
-          <p>Quản lý thông tin khách và khách hàng của khách sạn</p>
+      <div className={styles.header}>        <div>
+          <h1>Quản lý người dùng & khách hàng</h1>
+          <p>Quản lý thông tin tài khoản người dùng và khách hàng của khách sạn</p>
         </div>
         <button onClick={handleCreate} className={styles.createButton}>
           <Plus size={20} />
-          Thêm khách hàng
+          Thêm người dùng
         </button>
-      </div>
-
-      <div className={styles.controls}>
+      </div>      <div className={styles.controls}>
         <div className={styles.searchBox}>
-          <Search size={20} />          <input
+          <Search size={20} />
+          <input
             type="text"
-            placeholder="Tìm kiếm khách hàng theo tên, email, hoặc số điện thoại..."
+            placeholder="Tìm kiếm người dùng theo tên, email, hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -296,13 +271,13 @@ const Customers = () => {
       </div>
 
       <DataGrid
-        data={customers}
+        data={filteredCustomers}
         columns={columns}
         loading={loading}
-        emptyMessage="Không tìm thấy khách hàng nào"
+        emptyMessage="Không tìm thấy người dùng nào"
         pagination={{
           currentPage,
-          totalItems,
+          totalItems: filteredCustomers.length,
           itemsPerPage,
           onPageChange: setCurrentPage
         }}
@@ -311,15 +286,12 @@ const Customers = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={selectedCustomer ? 'Sửa thông tin khách hàng' : 'Thêm khách hàng mới'}
-      >
-        <Form
+        title={selectedCustomer ? 'Sửa thông tin người dùng' : 'Thêm người dùng mới'}
+      >        <Form
           fields={formFields}
           initialData={selectedCustomer}
-          validationSchema={customerValidationSchema}
           onSubmit={handleSubmit}
-          onCancel={() => setShowModal(false)}
-        />
+          onCancel={() => setShowModal(false)}        />
       </Modal>
     </div>
   );

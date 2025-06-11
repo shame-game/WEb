@@ -25,12 +25,17 @@ const Accounts = () => {
   useEffect(() => {
     filterAccounts();
   }, [accounts, searchTerm, statusFilter, roleFilter]);
-
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const response = await accountService.getAll();
-      setAccounts(response.data || []);
+      const response = await fetch('https://quanlyks.onrender.com/api/Customer');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setAccounts(data || []);
     } catch (error) {
       console.error('Failed to load accounts:', error);
       setAccounts([]);
@@ -38,52 +43,72 @@ const Accounts = () => {
       setLoading(false);
     }
   };
-
   const loadRoles = async () => {
     try {
-      const response = await roleService.getAll();
-      setRoles(response.data || []);
+      // Tạm thời sử dụng roles tĩnh vì API không có roles endpoint
+      const mockRoles = [
+        { id: 1, name: 'Admin' },
+        { id: 2, name: 'User' }
+      ];
+      setRoles(mockRoles);
     } catch (error) {
       console.error('Failed to load roles:', error);
       setRoles([]);
     }
   };
-
   const filterAccounts = () => {
     let filtered = [...accounts];
 
-    if (searchTerm) {      filtered = filtered.filter(account => {
-        const displayName = account.displayName || '';
-        const firstName = account.firstName || '';
-        const lastName = account.lastName || '';
+    if (searchTerm) {
+      filtered = filtered.filter(account => {
+        const fullName = account.fullName || '';
         const email = account.email || '';
         const username = account.username || '';
+        const phoneNumber = account.phoneNumber || '';
         
-        return displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               username.toLowerCase().includes(searchTerm.toLowerCase());
+               username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               phoneNumber.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(account => account.status === statusFilter);
+      filtered = filtered.filter(account => {
+        // Map roleName to status for filtering
+        if (statusFilter === 'Admin') {
+          return account.roleName === 'Admin';
+        } else if (statusFilter === 'User') {
+          return account.roleName === 'User';
+        }
+        return true;
+      });
     }
 
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(account => account.roleId === roleFilter);
+      filtered = filtered.filter(account => account.roleName === roleFilter);
     }
 
     setFilteredAccounts(filtered);
   };
-
   const handleSubmit = async (formData) => {
     try {
       if (editingAccount) {
-        await accountService.update(editingAccount.id, formData);
+        // API call để cập nhật account
+        // await fetch(`https://quanlyks.onrender.com/api/Customer/${editingAccount.customerId}`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(formData)
+        // });
+        alert('Chức năng cập nhật chưa được triển khai trên API');
       } else {
-        await accountService.create(formData);
+        // API call để tạo account mới
+        // await fetch('https://quanlyks.onrender.com/api/Customer', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(formData)
+        // });
+        alert('Chức năng tạo mới chưa được triển khai trên API');
       }
       await loadAccounts();
       setShowModal(false);
@@ -97,32 +122,32 @@ const Accounts = () => {
     setEditingAccount(account);
     setShowModal(true);
   };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this account?')) {
+  const handleDelete = async (customerId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản này?')) {
       try {
-        await accountService.delete(id);
+        // API call để xóa account
+        // await fetch(`https://quanlyks.onrender.com/api/Customer/${customerId}`, { method: 'DELETE' });
+        
+        alert('Chức năng xóa chưa được triển khai trên API');
         await loadAccounts();
       } catch (error) {
         console.error('Failed to delete account:', error);
       }
     }
   };
-
   const handleToggleStatus = async (account) => {
     try {
-      const newStatus = account.status === USER_STATUS.ACTIVE ? USER_STATUS.INACTIVE : USER_STATUS.ACTIVE;
-      await accountService.update(account.id, { ...account, status: newStatus });
-      await loadAccounts();
+      alert('Chức năng thay đổi trạng thái chưa được triển khai trên API');
+      // Có thể implement logic toggle status tại đây nếu API hỗ trợ
     } catch (error) {
       console.error('Failed to update account status:', error);
     }
   };
-
   const columns = [
     {
       key: 'fullName',
-      header: 'Name',      render: (account) => {
+      header: 'Tên người dùng',
+      render: (account) => {
         if (!account) return '-';
         
         return (
@@ -132,7 +157,7 @@ const Accounts = () => {
             </div>
             <div>
               <div className={styles.userName}>
-                {account.displayName || `${account.firstName || ''} ${account.lastName || ''}`.trim() || 'Unknown User'}
+                {account.fullName || 'Không có tên'}
               </div>
               <div className={styles.userUsername}>@{account.username || 'unknown'}</div>
             </div>
@@ -154,62 +179,46 @@ const Accounts = () => {
       }
     },
     {
-      key: 'phone',
-      header: 'Phone',
+      key: 'phoneNumber',
+      header: 'Số điện thoại',
       render: (account) => {
-        if (!account?.phone) return '-';
+        if (!account?.phoneNumber) return '-';
         
         return (
           <div className={styles.contactInfo}>
             <Phone size={16} />
-            {account.phone}
+            {account.phoneNumber}
           </div>
         );
+      }
+    },
+    {
+      key: 'address',
+      header: 'Địa chỉ',
+      render: (account) => {
+        if (!account?.address) return '-';
+        return account.address;
       }
     },
     {
       key: 'role',
-      header: 'Role',
+      header: 'Vai trò',
       render: (account) => {
         if (!account) return '-';
         
-        const role = roles.find(r => r.id === account.roleId);
         return (
           <div className={styles.roleInfo}>
             <Shield size={16} />
-            {role ? role.name : 'Unknown'}
+            {account.roleName || 'User'}
           </div>
         );
       }
     },    {
-      key: 'status',
-      header: 'Status',
+      key: 'customerId',
+      header: 'ID',
       render: (account) => {
         if (!account) return '-';
-        
-        return (
-          <StatusBadge 
-            status={account.status}
-            onClick={() => handleToggleStatus(account)}
-            clickable
-          />
-        );
-      }
-    },
-    {
-      key: 'lastLogin',
-      header: 'Last Login',
-      render: (account) => {
-        if (!account) return '-';
-        return account.lastLogin ? formatDate(account.lastLogin) : 'Never';
-      }
-    },
-    {
-      key: 'createdAt',
-      header: 'Created',
-      render: (account) => {
-        if (!account?.createdAt) return '-';
-        return formatDate(account.createdAt);
+        return `#${account.customerId}`;
       }
     }
   ];
@@ -227,117 +236,91 @@ const Accounts = () => {
       icon: Edit,
       label: 'Edit',
       onClick: handleEdit
-    },
-    {
+    },    {
       icon: Trash2,
-      label: 'Delete',
-      onClick: (account) => handleDelete(account.id),
+      label: 'Xóa',
+      onClick: (account) => handleDelete(account.customerId),
       className: styles.deleteAction
     }
   ];
-
   const formFields = [
     {
-      name: 'firstName',
-      label: 'First Name',
+      name: 'fullName',
+      label: 'Họ và tên',
       type: 'text',
       required: true,
-      placeholder: 'Enter first name'
-    },
-    {
-      name: 'lastName',
-      label: 'Last Name',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter last name'
+      placeholder: 'Nhập họ và tên'
     },
     {
       name: 'username',
-      label: 'Username',
+      label: 'Tên đăng nhập',
       type: 'text',
       required: true,
-      placeholder: 'Enter username'
+      placeholder: 'Nhập tên đăng nhập'
     },
     {
       name: 'email',
       label: 'Email',
       type: 'email',
       required: true,
-      placeholder: 'Enter email address'
+      placeholder: 'Nhập địa chỉ email'
     },
     {
-      name: 'phone',
-      label: 'Phone',
+      name: 'phoneNumber',
+      label: 'Số điện thoại',
       type: 'tel',
-      placeholder: 'Enter phone number'
+      placeholder: 'Nhập số điện thoại'
     },
     {
-      name: 'roleId',
-      label: 'Role',
-      type: 'select',
-      required: true,
-      options: roles.map(role => ({ value: role.id, label: role.name })),
-      placeholder: 'Select role'
+      name: 'address',
+      label: 'Địa chỉ',
+      type: 'text',
+      placeholder: 'Nhập địa chỉ'
     },
-    ...(!editingAccount ? [{
-      name: 'password',
-      label: 'Password',
-      type: 'password',
-      required: true,
-      placeholder: 'Enter password'
-    }, {
-      name: 'confirmPassword',
-      label: 'Confirm Password',
-      type: 'password',
-      required: true,
-      placeholder: 'Confirm password'
-    }] : []),
     {
-      name: 'status',
-      label: 'Status',
+      name: 'roleName',
+      label: 'Vai trò',
       type: 'select',
       required: true,
-      options: Object.entries(USER_STATUS).map(([key, value]) => ({
-        value,
-        label: key.charAt(0) + key.slice(1).toLowerCase()
-      })),
-      defaultValue: USER_STATUS.ACTIVE
+      options: [
+        { value: 'User', label: 'Người dùng' },
+        { value: 'Admin', label: 'Quản trị viên' }
+      ],
+      placeholder: 'Chọn vai trò'
     }
   ];
-
   const stats = [
     {
-      label: 'Total Users',
+      label: 'Tổng người dùng',
       value: accounts.length,
       color: 'primary'
     },
     {
-      label: 'Active Users',
-      value: accounts.filter(a => a.status === USER_STATUS.ACTIVE).length,
+      label: 'Quản trị viên',
+      value: accounts.filter(a => a.roleName === 'Admin').length,
       color: 'success'
     },
     {
-      label: 'Inactive Users',
-      value: accounts.filter(a => a.status === USER_STATUS.INACTIVE).length,
+      label: 'Người dùng',
+      value: accounts.filter(a => a.roleName === 'User').length,
       color: 'warning'
     },
     {
-      label: 'Online Now',
-      value: accounts.filter(a => a.isOnline).length,
+      label: 'Có email',
+      value: accounts.filter(a => a.email).length,
       color: 'info'
     }
   ];
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>User Accounts</h1>
+    <div className={styles.container}>      <div className={styles.header}>
+        <h1 className={styles.title}>Quản lý tài khoản người dùng</h1>
         <button
           className={styles.addButton}
           onClick={() => setShowModal(true)}
         >
           <Plus size={20} />
-          Add User
+          Thêm người dùng
         </button>
       </div>
 

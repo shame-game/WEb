@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Bed, MapPin, Settings, Filter } from 'lucide-react';
-import { roomService, roomTypeService } from '../../services';
-import { roomValidationSchema } from '../../utils/validationSchemas';
-import { ROOM_STATUSES } from '../../constants';
 import DataGrid from '../../components/UI/DataGrid';
 import Modal from '../../components/UI/Modal';
 import Form from '../../components/UI/Form';
@@ -12,7 +9,7 @@ import styles from './Rooms.module.css';
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
-  const [roomTypes, setRoomTypes] = useState([]);  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -25,29 +22,19 @@ const Rooms = () => {
   const itemsPerPage = 12;
 
   useEffect(() => {
-    fetchRoomTypes();
     fetchRooms();
-  }, [currentPage, searchTerm, statusFilter, typeFilter]);  const fetchRoomTypes = async () => {
-    try {
-      const response = await roomTypeService.getAll();
-      setRoomTypes(response.data || []);
-    } catch (error) {
-      console.error('Error fetching room types:', error);
-      setRoomTypes([]);
-    }
-  };const fetchRooms = async () => {
+  }, []);  const fetchRooms = async () => {
     try {
       setLoading(true);
-      const params = {
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchTerm,
-        status: statusFilter,
-        roomTypeId: typeFilter
-      };
-      const response = await roomService.getAll(params);
-      setRooms(response.data || []);
-      setTotalItems(response.data?.length || 0);
+      const response = await fetch('https://quanlyks.onrender.com/api/Room');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setRooms(data || []);
+      setTotalItems(data.length || 0);
     } catch (error) {
       console.error('Error fetching rooms:', error);
       setRooms([]);
@@ -68,78 +55,83 @@ const Rooms = () => {
   };  const handleDelete = async (room) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa phòng "${room.roomNumber}"?`)) {
       try {
-        await roomService.delete(room.id);
+        // API call để xóa room nếu cần
+        // await fetch(`https://quanlyks.onrender.com/api/Room/${room.roomId}`, { method: 'DELETE' });
+        
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Xóa phòng thành công!' 
+          message: 'Chức năng xóa chưa được triển khai trên API' 
         });
         fetchRooms();
       } catch (error) {
         console.error('Error deleting room:', error);
-        
-        // Handle specific errors
-        let errorMessage = 'Lỗi khi xóa phòng. Vui lòng thử lại.';
-        if (error.message === 'Cannot delete room with active bookings') {
-          errorMessage = 'Không thể xóa phòng đang có đặt phòng hoạt động. Vui lòng hủy đặt phòng trước.';
-        }
-        
         setResultPopup({ 
           show: true, 
           type: 'error', 
-          message: errorMessage 
+          message: 'Lỗi khi xóa phòng. Vui lòng thử lại.' 
         });
       }
     }
-  };const handleSubmit = async (data) => {
+  };  const handleSubmit = async (data) => {
     try {
       if (selectedRoom) {
-        await roomService.update(selectedRoom.id, data);
+        // API call để cập nhật room
+        // await fetch(`https://quanlyks.onrender.com/api/Room/${selectedRoom.roomId}`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Cập nhật thông tin phòng thành công!' 
+          message: 'Chức năng cập nhật chưa được triển khai trên API' 
         });
       } else {
-        await roomService.create(data);
+        // API call để tạo room mới
+        // await fetch('https://quanlyks.onrender.com/api/Room', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Thêm phòng mới thành công!' 
+          message: 'Chức năng tạo mới chưa được triển khai trên API' 
         });
       }
       setShowModal(false);
       fetchRooms();
     } catch (error) {
       console.error('Error saving room:', error);
-      
-      // Handle specific validation errors
-      let errorMessage = 'Có lỗi xảy ra khi lưu thông tin phòng. Vui lòng thử lại.';
-      if (error.message === 'Room number already exists') {
-        errorMessage = 'Số phòng đã tồn tại. Vui lòng chọn số phòng khác.';
-      } else if (error.message === 'Room type not found') {
-        errorMessage = 'Loại phòng không tồn tại. Vui lòng chọn loại phòng hợp lệ.';
-      }
-      
       setResultPopup({ 
         show: true, 
         type: 'error', 
-        message: errorMessage 
+        message: 'Có lỗi xảy ra khi lưu thông tin phòng. Vui lòng thử lại.' 
       });
     }
   };
-
   const getStatusColor = (status) => {
     const colors = {
-      available: '#10B981',
-      occupied: '#F59E0B',
-      maintenance: '#EF4444',
-      cleaning: '#3B82F6',
-      'out-of-order': '#6B7280'
+      'Available': '#10B981',
+      'Occupied': '#F59E0B',
+      'Maintenance': '#EF4444',
+      'Cleaning': '#3B82F6',
+      'Out of Order': '#6B7280'
     };
     return colors[status] || '#6B7280';
   };
-  const columns = [
+
+  const getStatusVariant = (status) => {
+    switch (status) {
+      case 'Available': return 'success';
+      case 'Occupied': return 'warning';
+      case 'Maintenance': return 'danger';
+      case 'Cleaning': return 'info';
+      case 'Out of Order': return 'secondary';
+      default: return 'secondary';
+    }
+  };  const columns = [
     {
       key: 'roomInfo',
       label: 'Chi tiết phòng',
@@ -152,29 +144,33 @@ const Rooms = () => {
             </div>
             <div>
               <div className={styles.roomNumber}>Phòng {room.roomNumber || 'N/A'}</div>
-              <div className={styles.roomFloor}>Tầng {room.floor || 'N/A'}</div>
+              <div className={styles.roomId}>ID: {room.roomId || 'N/A'}</div>
             </div>
           </div>
         );
       }
-    },    {
-      key: 'roomTypeName',
+    },
+    {
+      key: 'roomType',
       label: 'Loại phòng',
       render: (value, room) => {
         if (!room) return '-';
-        
-        // Find room type details for additional info
-        const roomType = roomTypes.find(rt => rt.id === room.roomTypeId);
-        
         return (
           <div className={styles.roomType}>
-            <div className={styles.roomTypeName}>{value || room.roomType?.name || 'N/A'}</div>
-            {roomType && (
-              <div className={styles.roomTypeDetails}>
-                <span className={styles.basePrice}>{roomType.basePrice?.toLocaleString('vi-VN')}đ</span>
-                <span className={styles.maxOccupancy}>Tối đa {roomType.maxOccupancy} người</span>
-              </div>
-            )}
+            <div className={styles.roomTypeName}>{room.roomType || 'N/A'}</div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'price',
+      label: 'Giá phòng',
+      render: (value, room) => {
+        if (!room || !room.price) return '-';
+        return (
+          <div className={styles.priceInfo}>
+            <span className={styles.price}>{room.price.toLocaleString('vi-VN')} VNĐ</span>
+            <span className={styles.priceUnit}>/ đêm</span>
           </div>
         );
       }
@@ -185,24 +181,12 @@ const Rooms = () => {
       render: (value, room) => {
         if (!room || !value) return '-';
         return (
-          <StatusBadge status={value} />
+          <StatusBadge 
+            status={value} 
+            variant={getStatusVariant(value)}
+          />
         );
       }
-    },    {
-      key: 'description',
-      label: 'Mô tả',
-      render: (value) => (
-        <div className={styles.description}>
-          {value || '-'}
-        </div>
-      )
-    },
-    {
-      key: 'isActive',
-      label: 'Trạng thái hoạt động',
-      render: (value) => (
-        <StatusBadge status={value ? 'active' : 'inactive'} />
-      )
     },
     {
       key: 'actions',
@@ -237,53 +221,53 @@ const Rooms = () => {
       label: 'Số phòng',
       type: 'text',
       required: true,
-      placeholder: 'Nhập số phòng (VD: 101, A201)'
+      placeholder: 'Nhập số phòng (VD: A101, 201)'
     },
     {
-      name: 'floor',
-      label: 'Tầng',
+      name: 'roomType',
+      label: 'Loại phòng',
+      type: 'text',
+      required: true,
+      placeholder: 'Nhập loại phòng (VD: Phòng đơn, Phòng đôi)'
+    },
+    {
+      name: 'price',
+      label: 'Giá phòng (VNĐ)',
       type: 'number',
       required: true,
-      placeholder: 'Nhập số tầng',
-      min: 1,
-      max: 50
-    },
-    {
-      name: 'roomTypeId',
-      label: 'Loại phòng',
-      type: 'select',
-      required: true,
-      options: roomTypes.map(type => ({
-        value: type.id,
-        label: `${type.name} - ${type.basePrice?.toLocaleString('vi-VN')}đ/đêm`
-      })),
-      placeholder: 'Chọn loại phòng'
+      placeholder: 'Nhập giá phòng',
+      min: 0
     },
     {
       name: 'status',
       label: 'Trạng thái',
       type: 'select',
       required: true,
-      options: ROOM_STATUSES.map(status => ({
-        value: status.value,
-        label: status.label
-      })),
-      defaultValue: 'available'
-    },
-    {
-      name: 'description',
-      label: 'Mô tả',
-      type: 'textarea',
-      placeholder: 'Nhập mô tả phòng (tùy chọn)',
-      maxLength: 500
-    },
-    {
-      name: 'isActive',
-      label: 'Trạng thái hoạt động',
-      type: 'checkbox',
-      defaultValue: true
+      options: [
+        { value: 'Available', label: 'Có sẵn' },
+        { value: 'Occupied', label: 'Đã đặt' },
+        { value: 'Maintenance', label: 'Bảo trì' },
+        { value: 'Cleaning', label: 'Đang dọn dẹp' },
+        { value: 'Out of Order', label: 'Hỏng hóc' }
+      ],
+      defaultValue: 'Available'
     }
   ];
+
+  // Filter rooms based on search and filters
+  const filteredRooms = rooms.filter(room => {
+    const matchesSearch = !searchTerm || 
+      room.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      room.roomType?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = !statusFilter || room.status === statusFilter;
+    const matchesType = !typeFilter || room.roomType === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  // Get unique room types for filter
+  const roomTypes = [...new Set(rooms.map(room => room.roomType))].filter(Boolean);
 
   return (
     <div className={styles.rooms}>      <div className={styles.header}>
@@ -306,19 +290,18 @@ const Rooms = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
-        <div className={styles.filters}>
+          <div className={styles.filters}>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className={styles.filterSelect}
           >
             <option value="">Tất cả trạng thái</option>
-            {ROOM_STATUSES.map(status => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
+            <option value="Available">Có sẵn</option>
+            <option value="Occupied">Đã đặt</option>
+            <option value="Maintenance">Bảo trì</option>
+            <option value="Cleaning">Đang dọn dẹp</option>
+            <option value="Out of Order">Hỏng hóc</option>
           </select>
           
           <select
@@ -328,33 +311,30 @@ const Rooms = () => {
           >
             <option value="">Tất cả loại phòng</option>
             {roomTypes.map(type => (
-              <option key={type.id} value={type.id}>
-                {type.name}
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>
         </div>
-      </div>
-
-      <DataGrid
-        data={rooms}
+      </div>      <DataGrid
+        data={filteredRooms}
         columns={columns}
         loading={loading}
+        emptyMessage="Không tìm thấy phòng nào"
         pagination={{
           currentPage,
-          totalItems,
+          totalItems: filteredRooms.length,
           itemsPerPage,
           onPageChange: setCurrentPage
         }}
-      />      <Modal
+      /><Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={selectedRoom ? 'Chỉnh sửa phòng' : 'Thêm phòng mới'}
-      >
-        <Form
+      >        <Form
           fields={formFields}
           initialData={selectedRoom}
-          validationSchema={roomValidationSchema}
           onSubmit={handleSubmit}
           onCancel={() => setShowModal(false)}
           submitText={selectedRoom ? 'Cập nhật' : 'Thêm mới'}

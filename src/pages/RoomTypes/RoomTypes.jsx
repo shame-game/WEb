@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Home, Users, DollarSign, Bed, Star, Wifi } from 'lucide-react';
-import { roomTypeService } from '../../services';
-import { roomTypeValidationSchema } from '../../utils/validationSchemas';
 import DataGrid from '../../components/UI/DataGrid';
 import Modal from '../../components/UI/Modal';
 import Form from '../../components/UI/Form';
@@ -21,12 +19,17 @@ const RoomTypes = () => {
 
   useEffect(() => {
     fetchRoomTypes();
-  }, []);
-  const fetchRoomTypes = async () => {
+  }, []);  const fetchRoomTypes = async () => {
     try {
       setLoading(true);
-      const response = await roomTypeService.getAll();
-      setRoomTypes(response.data || []);
+      const response = await fetch('https://quanlyks.onrender.com/api/RoomType');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setRoomTypes(data || []);
     } catch (error) {
       console.error('Error fetching room types:', error);
       setRoomTypes([]);
@@ -44,65 +47,62 @@ const RoomTypes = () => {
     setSelectedRoomType(roomType);
     setShowModal(true);
   };
-
   const handleDelete = async (roomType) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa loại phòng "${roomType.name}"?`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa loại phòng "${roomType.roomTypeName}"?`)) {
       try {
-        await roomTypeService.delete(roomType.id);
+        // API call để xóa room type nếu cần
+        // await fetch(`https://quanlyks.onrender.com/api/RoomType/${roomType.roomTypeId}`, { method: 'DELETE' });
+        
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Xóa loại phòng thành công!' 
+          message: 'Chức năng xóa chưa được triển khai trên API' 
         });
         fetchRoomTypes();
       } catch (error) {
         console.error('Error deleting room type:', error);
-        
-        let errorMessage = 'Lỗi khi xóa loại phòng. Vui lòng thử lại.';
-        if (error.message === 'Cannot delete room type with existing rooms') {
-          errorMessage = 'Không thể xóa loại phòng đang có phòng. Vui lòng xóa tất cả phòng thuộc loại này trước.';
-        }
-        
         setResultPopup({ 
           show: true, 
           type: 'error', 
-          message: errorMessage 
+          message: 'Lỗi khi xóa loại phòng. Vui lòng thử lại.' 
         });
       }
     }
   };
-
   const handleSubmit = async (data) => {
     try {
       if (selectedRoomType) {
-        await roomTypeService.update(selectedRoomType.id, data);
+        // API call để cập nhật room type
+        // await fetch(`https://quanlyks.onrender.com/api/RoomType/${selectedRoomType.roomTypeId}`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Cập nhật loại phòng thành công!' 
-        });
-      } else {
-        await roomTypeService.create(data);
+          message: 'Chức năng cập nhật chưa được triển khai trên API' 
+        });} else {
+        // API call để tạo room type mới
+        // await fetch('https://quanlyks.onrender.com/api/RoomType', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(data)
+        // });
         setResultPopup({ 
           show: true, 
           type: 'success', 
-          message: 'Thêm loại phòng mới thành công!' 
+          message: 'Chức năng tạo mới chưa được triển khai trên API' 
         });
       }
       setShowModal(false);
       fetchRoomTypes();
     } catch (error) {
       console.error('Error saving room type:', error);
-      
-      let errorMessage = 'Có lỗi xảy ra khi lưu thông tin loại phòng. Vui lòng thử lại.';
-      if (error.message === 'Room type name already exists') {
-        errorMessage = 'Tên loại phòng đã tồn tại. Vui lòng chọn tên khác.';
-      }
-      
       setResultPopup({ 
         show: true, 
         type: 'error', 
-        message: errorMessage 
+        message: 'Có lỗi xảy ra khi lưu thông tin loại phòng. Vui lòng thử lại.' 
       });
     }  };
   const columns = [
@@ -110,10 +110,9 @@ const RoomTypes = () => {
       key: 'roomTypeInfo',
       label: 'Thông tin loại phòng',
       render: (_, roomType) => {
-        if (!roomType) return '-';
-        const getIconForRoomType = (name) => {
+        if (!roomType) return '-';        const getIconForRoomType = (name) => {
           const roomTypeName = (name || '').toLowerCase();
-          if (roomTypeName.includes('deluxe') || roomTypeName.includes('suite') || roomTypeName.includes('luxury')) {
+          if (roomTypeName.includes('vip') || roomTypeName.includes('deluxe') || roomTypeName.includes('suite') || roomTypeName.includes('luxury')) {
             return <Star size={20} />;
           }
           if (roomTypeName.includes('standard') || roomTypeName.includes('classic')) {
@@ -131,63 +130,33 @@ const RoomTypes = () => {
         return (
           <div className={styles.roomTypeInfo}>
             <div className={styles.roomTypeIcon}>
-              {getIconForRoomType(roomType.name)}
+              {getIconForRoomType(roomType.roomTypeName)}
             </div>
             <div>
-              <div className={styles.roomTypeName}>{roomType.name || 'N/A'}</div>
-              <div className={styles.roomTypeDescription}>{roomType.description || 'Không có mô tả'}</div>
+              <div className={styles.roomTypeName}>{roomType.roomTypeName || 'N/A'}</div>
+              <div className={styles.roomTypeId}>ID: {roomType.roomTypeId || 'N/A'}</div>
             </div>
           </div>
         );
       }
     },    {
-      key: 'basePrice',
-      label: 'Giá cơ bản',
-      render: (value, roomType) => {
-        if (!roomType || !value) return '-';
-        return (
-          <div className={styles.priceInfo}>
-            <div className={styles.priceWithIcon}>
-              <DollarSign size={16} className={styles.priceIcon} />
-              <span className={styles.price}>{value.toLocaleString('vi-VN')}đ</span>
-            </div>
-            <span className={styles.priceUnit}>/đêm</span>
-          </div>
-        );
-      }
-    },
-    {
-      key: 'maxOccupancy',
-      label: 'Sức chứa',
-      render: (value) => {
-        if (!value) return '-';
-        return (
-          <div className={styles.occupancyInfo}>
-            <Users size={16} />
-            <span>{value} người</span>
-          </div>
-        );
-      }
-    },
-    {
-      key: 'roomCount',
+      key: 'rooms',
       label: 'Số phòng',
       render: (value, roomType) => {
         if (!roomType) return '-';
+        const roomCount = roomType.rooms ? roomType.rooms.length : 0;
         return (
           <div className={styles.roomCount}>
-            <div className={styles.totalRooms}>Tổng: {value || 0}</div>
-            <div className={styles.availableRooms}>Sẵn có: {roomType.availableRooms || 0}</div>
+            <div className={styles.totalRooms}>Tổng: {roomCount}</div>
+            <div className={styles.roomsInfo}>
+              {roomType.rooms && roomType.rooms.length > 0 ? 
+                `Có ${roomType.rooms.length} phòng` : 
+                'Chưa có phòng nào'
+              }
+            </div>
           </div>
         );
       }
-    },
-    {
-      key: 'isActive',
-      label: 'Trạng thái',
-      render: (value) => (
-        <StatusBadge status={value ? 'active' : 'inactive'} />
-      )
     },
     {
       key: 'actions',
@@ -212,59 +181,19 @@ const RoomTypes = () => {
       )
     }
   ];
-
   const formFields = [
     {
-      name: 'name',
+      name: 'roomTypeName',
       label: 'Tên loại phòng',
       type: 'text',
       required: true,
-      placeholder: 'Nhập tên loại phòng (VD: Standard Room, Deluxe Room)'
-    },
-    {
-      name: 'description',
-      label: 'Mô tả',
-      type: 'textarea',
-      required: true,
-      placeholder: 'Nhập mô tả chi tiết về loại phòng',
-      maxLength: 500
-    },
-    {
-      name: 'basePrice',
-      label: 'Giá cơ bản (VNĐ)',
-      type: 'number',
-      required: true,
-      placeholder: 'Nhập giá cơ bản',
-      min: 0,
-      step: 1000
-    },
-    {
-      name: 'maxOccupancy',
-      label: 'Sức chứa tối đa',
-      type: 'number',
-      required: true,
-      placeholder: 'Số người tối đa',
-      min: 1,
-      max: 10
-    },
-    {
-      name: 'amenities',
-      label: 'Tiện nghi',
-      type: 'textarea',
-      placeholder: 'Nhập các tiện nghi (cách nhau bằng dấu phẩy)',
-      helperText: 'VD: Wi-Fi miễn phí, Điều hòa, Smart TV'
-    },
-    {
-      name: 'isActive',
-      label: 'Trạng thái hoạt động',
-      type: 'checkbox',
-      defaultValue: true
+      placeholder: 'Nhập tên loại phòng (VD: Phòng VIP, Phòng Standard)'
     }
   ];
+
   // Filter room types by search term
   const filteredRoomTypes = roomTypes.filter(roomType =>
-    (roomType.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (roomType.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (roomType.roomTypeName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -285,28 +214,26 @@ const RoomTypes = () => {
           <Search size={20} />
           <input
             type="text"
-            placeholder="Tìm kiếm loại phòng theo tên hoặc mô tả..."
+            placeholder="Tìm kiếm loại phòng theo tên..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      <DataGrid
-        data={filteredRoomTypes}
+      <DataGrid        data={filteredRoomTypes}
         columns={columns}
         loading={loading}
+        emptyMessage="Không tìm thấy loại phòng nào"
       />
 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={selectedRoomType ? 'Chỉnh sửa loại phòng' : 'Thêm loại phòng mới'}
-      >
-        <Form
+      >        <Form
           fields={formFields}
           initialData={selectedRoomType}
-          validationSchema={roomTypeValidationSchema}
           onSubmit={handleSubmit}
           onCancel={() => setShowModal(false)}
         />

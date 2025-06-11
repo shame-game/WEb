@@ -5,7 +5,6 @@ import { Layout, PrivateRoute } from './components';
 import { PERMISSIONS } from './utils/permissions';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
-import Accounts from './pages/Accounts/Accounts';
 import Roles from './pages/Roles/Roles';
 import Customers from './pages/Customers/Customers';
 import RoomTypes from './pages/RoomTypes/RoomTypes';
@@ -36,7 +35,7 @@ function App() {
           <Route path="/accounts" element={
             <PrivateRoute requiredPermissions={[PERMISSIONS.USER_MANAGEMENT]}>
               <Layout>
-                <Accounts />
+                <Customers />
               </Layout>
             </PrivateRoute>
           } />

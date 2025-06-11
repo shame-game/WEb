@@ -46,7 +46,6 @@ const Layout = ({ children }) => {
     { path: '/', icon: Home, label: 'Dashboard', permission: PERMISSIONS.DASHBOARD_VIEW },
     { path: '/accounts', icon: Users, label: 'Tài khoản', permission: PERMISSIONS.USER_MANAGEMENT },
     { path: '/roles', icon: Shield, label: 'Vai trò', permission: PERMISSIONS.ROLE_MANAGEMENT },
-    { path: '/customers', icon: UserCheck, label: 'Khách hàng', permission: PERMISSIONS.CUSTOMER_MANAGEMENT },
     { path: '/room-types', icon: Building, label: 'Loại phòng', permission: PERMISSIONS.ROOM_TYPE_MANAGEMENT },
     { path: '/rooms', icon: Bed, label: 'Phòng', permission: PERMISSIONS.ROOM_READ },
     { path: '/services', icon: Coffee, label: 'Dịch vụ', permission: PERMISSIONS.SERVICE_READ },

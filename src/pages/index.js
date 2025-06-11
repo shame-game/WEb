@@ -1,6 +1,5 @@
 export { default as Login } from './Login';
 export { default as Dashboard } from './Dashboard';
-export { default as Accounts } from './Accounts';
 export { default as Roles } from './Roles';
 export { default as Customers } from './Customers';
 export { default as RoomTypes } from './RoomTypes';
