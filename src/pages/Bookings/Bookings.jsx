@@ -1,348 +1,541 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { bookingService, roomService, roomTypeService } from '../../services';
+import { Search, Plus, Edit2, Trash2, Calendar, User, Bed, Filter, FileText, Download } from 'lucide-react';
 import BookingForm from './BookingForm';
-import AddRoomPopup from './AddRoomPopup';
-import AddRoomTypePopup from './AddRoomTypePopup';
+import InvoicePreview from './InvoicePreview';
+import DataGrid from '../../components/UI/DataGrid';
+import Modal from '../../components/UI/Modal';
+import StatusBadge from '../../components/UI/StatusBadge';
+import ResultPopup from '../../components/UI/ResultPopup';
 import styles from './Bookings.module.css';
-import { useApi } from '../../hooks/useApi';
-import Modal from '../../components/UI/Modal'; // Import Modal
-import Button from '../../components/UI/Button'; // Import Button for table actions
-import FullScreenLoader from '../../components/UI/FullScreenLoader'; // Import FullScreenLoader
-import ResultPopup from '../../components/UI/ResultPopup'; // Import ResultPopup
-import { PlusCircle, Edit, Trash2, Home, Layers } from 'lucide-react'; // Icons
+import { mockBookings, mockRoomTypes, mockRooms, mockCustomers, mockInvoices } from '../../data/mockData';
 
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
-  const [editingBooking, setEditingBooking] = useState(null);
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [rooms, setRooms] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [roomTypes, setRoomTypes] = useState([]);  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
   const [isAddRoomTypeModalOpen, setIsAddRoomTypeModalOpen] = useState(false);
-  const [roomTypes, setRoomTypes] = useState([]);
-  const [resultPopupInfo, setResultPopupInfo] = useState({ isOpen: false, type: '', message: '' });
+  const [resultPopup, setResultPopup] = useState({ show: false, type: '', message: '' });  const [invoiceData, setInvoiceData] = useState(null);
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [invoices, setInvoices] = useState([]);
 
-  const { 
-    data: fetchedBookings,
-    loading: loadingBookings,
-    error: fetchError,
-    callApi: fetchBookingsApi 
-  } = useApi(bookingService.getBookings);
-
-  const {
-    loading: creatingBooking,
-    callApi: createBookingApi
-  } = useApi(bookingService.createBooking);
-
-  const {
-    loading: updatingBooking,
-    callApi: updateBookingApi
-  } = useApi(bookingService.updateBooking);
-    const {
-    loading: deletingBooking,
-    callApi: deleteBookingApi
-  } = useApi(bookingService.deleteBooking);
-  const {
-    loading: creatingRoom,
-    callApi: createRoomApi
-  } = useApi(roomService.createRoom);
-
-  const {
-    loading: creatingRoomType,
-    callApi: createRoomTypeApi
-  } = useApi(roomTypeService.createRoomType);
-
-  const loadBookings = useCallback(async () => {
-    try {
-      const data = await fetchBookingsApi();
-      if (data) setBookings(data);
-    } catch (error) {
-      setResultPopupInfo({ isOpen: true, type: 'error', title: 'Error Fetching Bookings', message: error.message });
-    }
-  }, [fetchBookingsApi]);
+  // Load initial data from mock data
   useEffect(() => {
-    loadBookings();
-    loadRoomTypes();
-  }, [loadBookings]);
-  const loadRoomTypes = useCallback(async () => {
-    try {
-      const response = await roomTypeService.getAll();
-      console.log('Room types response:', response); // Debug log
-      // API trả về data trực tiếp hoặc trong response.data
-      const roomTypesData = response.data || response;
-      setRoomTypes(Array.isArray(roomTypesData) ? roomTypesData : []);
-    } catch (error) {
-      console.error('Error fetching room types:', error);
-      // Fallback data với structure phù hợp
-      setRoomTypes([
-        { roomTypeId: 1, roomTypeName: 'Standard Room' },
-        { roomTypeId: 2, roomTypeName: 'Deluxe Room' },
-        { roomTypeId: 3, roomTypeName: 'Suite' }
-      ]);
-    }
-  }, []);
+    setLoading(true);
+    
+    // Transform mock data to match the component's expected structure
+    const transformedBookings = mockBookings.map(booking => ({
+      bookingId: booking.id,
+      customerId: booking.customerId,
+      roomId: booking.roomId,
+      checkInTime: booking.checkInDate + 'T14:00:00',
+      checkOutTime: booking.checkOutDate + 'T12:00:00',
+      status: booking.status,
+      customer: {
+        customerId: booking.customerId,
+        name: booking.customerName
+      },
+      room: {
+        roomId: booking.roomId,
+        roomNumber: booking.roomNumber,
+        roomTypeName: booking.roomTypeName
+      },
+      totalAmount: booking.totalAmount,
+      specialRequests: booking.specialRequests
+    }));
 
-  const handleFormSubmit = async (formData) => {
-    // Construct payload with nested structures expected by API
-    const payload = {
-      bookingId: editingBooking?.bookingId || 0,
-      customerId: parseInt(formData.customerId, 10),
-      roomId: parseInt(formData.roomId, 10),
-      checkInTime: new Date(formData.checkInTime).toISOString(),
-      checkOutTime: new Date(formData.checkOutTime).toISOString(),
-      status: formData.status,
-      Customer: {
-        customerId: parseInt(formData.customerId, 10),
-        fullName: formData.fullName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        address: formData.address,
-        bookings: [],
-      },
-      Room: {
-        roomId: parseInt(formData.roomId, 10),
-        roomNumber: formData.roomNumber,
-        roomTypeId: parseInt(formData.roomTypeId, 10),
-        price: parseFloat(formData.price),
-        status: formData.roomStatus,
-        RoomType: {
-          roomTypeId: parseInt(formData.roomTypeId, 10),
-          roomTypeName: formData.roomTypeName,
-          rooms: [],
+    const transformedRoomTypes = mockRoomTypes.map(type => ({
+      roomTypeId: type.id,
+      roomTypeName: type.name,
+      description: type.description,
+      basePrice: type.basePrice
+    }));
+
+    const transformedRooms = mockRooms.map(room => ({
+      roomId: room.id,
+      roomNumber: room.roomNumber,
+      roomTypeId: room.roomTypeId,
+      roomTypeName: room.roomTypeName,
+      price: room.price,
+      status: room.status
+    }));
+
+    const transformedCustomers = mockCustomers.map(customer => ({
+      customerId: customer.id,
+      fullName: customer.fullName,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address
+    }));    setBookings(transformedBookings);
+    setRoomTypes(transformedRoomTypes);
+    setRooms(transformedRooms);
+    setCustomers(transformedCustomers);
+    setInvoices(mockInvoices);
+    
+    setLoading(false);
+  }, []);  const handleFormSubmit = async (formData) => {
+    setLoading(true);
+
+    try {
+      if (selectedBooking) {
+        // Update existing booking
+        const updatedBooking = {
+          ...selectedBooking,
+          customerId: parseInt(formData.customerId, 10),
+          roomId: parseInt(formData.roomId, 10),
+          checkInTime: formData.checkInTime,
+          checkOutTime: formData.checkOutTime,
+          status: formData.status,
+          specialRequests: formData.specialRequests,
+          // Update nested objects
+          customer: customers.find(c => c.customerId === parseInt(formData.customerId, 10)),
+          room: rooms.find(r => r.roomId === parseInt(formData.roomId, 10))
+        };
+
+        setBookings(prev => prev.map(booking => 
+          booking.bookingId === selectedBooking.bookingId ? updatedBooking : booking
+        ));
+          setResultPopup({ 
+          show: true, 
+          type: 'success', 
+          message: 'Đặt phòng đã được cập nhật thành công!' 
+        });
+      } else {
+        // Create new booking
+        const newBooking = {
+          bookingId: Math.max(...bookings.map(b => b.bookingId), 0) + 1,
+          customerId: parseInt(formData.customerId, 10),
+          roomId: parseInt(formData.roomId, 10),
+          checkInTime: formData.checkInTime,
+          checkOutTime: formData.checkOutTime,
+          status: formData.status || 'confirmed',
+          specialRequests: formData.specialRequests || '',
+          customer: customers.find(c => c.customerId === parseInt(formData.customerId, 10)),
+          room: rooms.find(r => r.roomId === parseInt(formData.roomId, 10)),
+          totalAmount: 0 // Calculate based on room price and duration
+        };
+
+        setBookings(prev => [...prev, newBooking]);
+          setResultPopup({ 
+          show: true, 
+          type: 'success', 
+          message: 'Đặt phòng đã được tạo thành công!' 
+        });
+      }
+      
+      setShowModal(false);
+      setSelectedBooking(null);
+    } catch (error) {      setResultPopup({ 
+        show: true, 
+        type: 'error', 
+        message: 'Đã xảy ra lỗi khi xử lý đặt phòng.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };  const handleDelete = (bookingId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa đặt phòng này không?')) {
+      setLoading(true);
+      
+      try {
+        setBookings(prev => prev.filter(booking => booking.bookingId !== bookingId));
+        setResultPopup({ 
+          show: true, 
+          type: 'success', 
+          message: 'Đặt phòng đã được xóa thành công!' 
+        });
+      } catch (error) {
+        setResultPopup({ 
+          show: true, 
+          type: 'error', 
+          message: 'Đã xảy ra lỗi khi xóa đặt phòng.' 
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCreate = () => {
+    setSelectedBooking(null);
+    setShowModal(true);
+  };
+
+  const handleEdit = (booking) => {
+    setSelectedBooking(booking);
+    setShowModal(true);
+  };
+  const handleAddRoom = (roomData) => {
+    setLoading(true);
+    
+    try {
+      const newRoom = {
+        roomId: Math.max(...rooms.map(r => r.roomId), 0) + 1,
+        roomNumber: roomData.roomNumber,
+        roomTypeId: parseInt(roomData.roomTypeId, 10),
+        roomTypeName: roomTypes.find(rt => rt.roomTypeId === parseInt(roomData.roomTypeId, 10))?.roomTypeName || '',
+        price: parseFloat(roomData.price),
+        status: 'available',
+        floor: parseInt(roomData.floor) || 1,
+        description: roomData.description || ''
+      };
+
+      setRooms(prev => [...prev, newRoom]);      setResultPopup({
+        show: true, 
+        type: 'success', 
+        message: 'Phòng đã được thêm thành công!' 
+      });
+      setIsAddRoomModalOpen(false);
+    } catch (error) {
+      setResultPopup({ 
+        show: true, 
+        type: 'error', 
+        message: 'Đã xảy ra lỗi khi thêm phòng.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddRoomType = (roomTypeData) => {
+    setLoading(true);
+    
+    try {
+      const newRoomType = {
+        roomTypeId: Math.max(...roomTypes.map(rt => rt.roomTypeId), 0) + 1,
+        roomTypeName: roomTypeData.roomTypeName,
+        description: roomTypeData.description || '',
+        basePrice: parseFloat(roomTypeData.basePrice) || 0,
+        maxOccupancy: parseInt(roomTypeData.maxOccupancy) || 2
+      };
+
+      setRoomTypes(prev => [...prev, newRoomType]);      setResultPopup({ 
+        show: true, 
+        type: 'success', 
+        message: 'Loại phòng đã được tạo thành công!' 
+      });
+      setIsAddRoomTypeModalOpen(false);
+    } catch (error) {
+      setResultPopup({ 
+        show: true, 
+        type: 'error', 
+        message: 'Đã xảy ra lỗi khi thêm loại phòng.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleExportInvoice = (booking) => {
+    // Calculate invoice details
+    const checkInDate = new Date(booking.checkInTime);
+    const checkOutDate = new Date(booking.checkOutTime);
+    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+    const room = rooms.find(r => r.roomId === booking.roomId);
+    const roomPrice = room?.price || 0;
+    const subtotal = roomPrice * nights;
+    const taxRate = 0.1; // 10% tax
+    const taxAmount = subtotal * taxRate;
+    const totalAmount = subtotal + taxAmount;
+
+    // Generate invoice data
+    const invoice = {
+      invoiceId: Math.max(...invoices.map(inv => inv.invoiceId), 0) + 1,
+      bookingId: booking.bookingId,
+      customerName: booking.customer?.name || `Khách hàng ID: ${booking.customerId}`,
+      roomNumber: booking.room?.roomNumber || `Phòng ID: ${booking.roomId}`,
+      roomType: booking.room?.roomTypeName || '',
+      checkInDate: checkInDate.toLocaleDateString('vi-VN'),
+      checkOutDate: checkOutDate.toLocaleDateString('vi-VN'),
+      nights: nights,
+      roomPrice: roomPrice,
+      subtotal: subtotal,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+      status: 'PENDING',
+      issueDate: new Date().toLocaleDateString('vi-VN'),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'), // 7 days from now
+      items: [
+        { 
+          description: `Phòng ${booking.room?.roomNumber} - ${booking.room?.roomTypeName} (${nights} đêm)`, 
+          amount: subtotal 
         },
-        bookings: [],
-      },
-      Invoice: {
-        invoiceId: editingBooking?.invoice?.invoiceId || 0,
-        bookingId: 0,
-        totalAmount: parseFloat(formData.totalAmount),
-        status: formData.invoiceStatus,
-        booking: null,
-        payments: [
-          {
-            paymentId: 0,
-            invoiceId: 0,
-            paymentMethod: formData.paymentMethod,
-            amount: parseFloat(formData.paymentAmount),
-            paymentDate: new Date(formData.paymentDate).toISOString(),
-            invoice: null,
-          },
-        ],
-      },
-      BookingServices: [
-        {
-          bookingId: 0,
-          serviceId: parseInt(formData.serviceId, 10),
-          service: {
-            serviceId: parseInt(formData.serviceId, 10),
-            serviceName: formData.serviceName,
-            price: parseFloat(formData.servicePrice),
-            bookingServices: [],
-          },
-          serviceDate: new Date(formData.serviceDate).toISOString(),
-          booking: null,
-        },
-      ],
+        { 
+          description: 'Thuế (10%)', 
+          amount: taxAmount 
+        }
+      ]
     };
 
-    try {
-      if (editingBooking) {
-        await updateBookingApi(editingBooking.bookingId, payload);
-        setResultPopupInfo({ isOpen: true, type: 'success', title: 'Booking Updated', message: 'Booking updated successfully!' });
-      } else {
-        await createBookingApi(payload);
-        setResultPopupInfo({ isOpen: true, type: 'success', title: 'Booking Created', message: 'Booking created successfully!' });
-      }
-      loadBookings();
-      closeFormModal();
-    } catch (error) {
-      setResultPopupInfo({ isOpen: true, type: 'error', title: `Error ${editingBooking ? 'Updating' : 'Creating'} Booking`, message: error.message });
+    setInvoiceData(invoice);
+    setShowInvoicePreview(true);
+  };
+
+  const handleSaveInvoice = (invoice) => {
+    // Add invoice to invoices list
+    const newInvoice = {
+      ...invoice,
+      id: Math.max(...invoices.map(inv => inv.id || 0), 0) + 1,
+      paidAmount: 0,
+      paymentMethod: null
+    };
+    
+    setInvoices(prev => [...prev, newInvoice]);
+    
+    // Update booking to mark as invoiced
+    setBookings(prev => prev.map(booking => 
+      booking.bookingId === invoice.bookingId 
+        ? { ...booking, hasInvoice: true, invoiceId: invoice.invoiceId }
+        : booking
+    ));
+
+    setResultPopup({
+      show: true,
+      type: 'success',
+      message: 'Hóa đơn đã được tạo và lưu thành công!'
+    });
+
+    setShowInvoicePreview(false);
+  };
+
+  // Filter and search logic
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = !searchTerm || 
+      booking.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.room?.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.bookingId.toString().includes(searchTerm);
+    
+    const matchesStatus = !statusFilter || booking.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });  // DataGrid columns configuration
+  const columns = [
+    {
+      key: 'bookingId',
+      header: 'Mã đặt phòng',
+      width: '80px',
+      render: (value, booking) => `#${booking.bookingId}`
+    },
+    {
+      key: 'customer',
+      header: 'Khách hàng',
+      render: (value, booking) => (
+        <div className={styles.customerInfo}>
+          <div className={styles.customerName}>
+            {booking.customer?.name || `Mã KH: ${booking.customerId}`}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'room',
+      header: 'Phòng',
+      render: (value, booking) => (
+        <div className={styles.roomInfo}>
+          <div className={styles.roomNumber}>
+            <Bed size={16} />
+            {booking.room?.roomNumber || `Mã phòng: ${booking.roomId}`}
+          </div>
+          <div className={styles.roomType}>
+            {booking.room?.roomTypeName}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'dates',
+      header: 'Ngày nhận / Trả phòng',
+      render: (value, booking) => (
+        <div className={styles.dateInfo}>
+          <div className={styles.checkIn}>
+            <Calendar size={14} />
+            {new Date(booking.checkInTime).toLocaleDateString('vi-VN')}
+          </div>
+          <div className={styles.checkOut}>
+            <Calendar size={14} />
+            {new Date(booking.checkOutTime).toLocaleDateString('vi-VN')}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      width: '120px',
+      render: (value, booking) => (
+        <StatusBadge 
+          status={booking.status} 
+          variant={getStatusVariant(booking.status)}
+        />
+      )
+    },
+    {
+      key: 'totalAmount',
+      header: 'Tổng tiền',
+      width: '100px',
+      render: (value, booking) => 
+        booking.totalAmount ? `${booking.totalAmount.toLocaleString('vi-VN')} VNĐ` : '-'
+    },    {
+      key: 'actions',
+      header: 'Thao tác',
+      width: '150px',
+      render: (value, booking) => (
+        <div className={styles.actions}>
+          {!booking.hasInvoice && (
+            <>
+              <button 
+                onClick={() => handleEdit(booking)} 
+                className={styles.editButton}
+                title="Chỉnh sửa đặt phòng"
+              >
+                <Edit2 size={16} />
+              </button>
+              <button 
+                onClick={() => handleDelete(booking.bookingId)} 
+                className={styles.deleteButton}
+                title="Xóa đặt phòng"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+          <button 
+            onClick={() => handleExportInvoice(booking)} 
+            className={styles.exportButton}
+            title={booking.hasInvoice ? "Xem hóa đơn" : "Xuất hóa đơn"}
+            disabled={booking.hasInvoice}
+          >
+            <FileText size={16} />
+          </button>
+          {booking.hasInvoice && (
+            <span className={styles.invoicedBadge} title="Đã xuất hóa đơn">
+              ✓
+            </span>
+          )}
+        </div>
+      )
+    }
+  ];
+
+  const getStatusVariant = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'confirmed': return 'success';
+      case 'checked_in': return 'info';
+      case 'checked_out': return 'secondary';
+      case 'cancelled': return 'danger';
+      case 'pending': return 'warning';
+      default: return 'secondary';
     }
   };
-
-  const handleDeleteBooking = async (bookingId) => {
-    // Simple confirm, can be replaced with a custom confirmation popup
-    if (window.confirm('Are you sure you want to delete this booking?')) {
-      try {
-        await deleteBookingApi(bookingId);
-        setResultPopupInfo({ isOpen: true, type: 'success', title: 'Booking Deleted', message: 'Booking deleted successfully!' });
-        loadBookings(); // Refresh list
-      } catch (error) {
-        setResultPopupInfo({ isOpen: true, type: 'error', title: 'Error Deleting Booking', message: error.message });
-      }
-    }
-  };
-
-  const openFormModal = (booking = null) => {
-    setEditingBooking(booking);
-    setIsFormModalOpen(true);
-  };
-  const closeFormModal = () => {
-    setIsFormModalOpen(false);
-    setEditingBooking(null);
-  };
-
-  const openAddRoomModal = () => {
-    setIsAddRoomModalOpen(true);
-  };
-  const closeAddRoomModal = () => {
-    setIsAddRoomModalOpen(false);
-  };
-
-  const openAddRoomTypeModal = () => {
-    setIsAddRoomTypeModalOpen(true);
-  };
-
-  const closeAddRoomTypeModal = () => {
-    setIsAddRoomTypeModalOpen(false);
-  };
-
-  const handleAddRoom = async (roomData) => {
-    try {
-      await createRoomApi(roomData);
-      setResultPopupInfo({ 
-        isOpen: true, 
-        type: 'success', 
-        title: 'Room Added', 
-        message: 'Room has been successfully added!' 
-      });
-      closeAddRoomModal();
-    } catch (error) {
-      setResultPopupInfo({ 
-        isOpen: true, 
-        type: 'error', 
-        title: 'Error Adding Room', 
-        message: error.message 
-      });    }
-  };
-
-  const handleAddRoomType = async (roomTypeData) => {
-    try {
-      await createRoomTypeApi(roomTypeData);
-      setResultPopupInfo({ 
-        isOpen: true, 
-        type: 'success', 
-        title: 'Room Type Added', 
-        message: 'Room type has been successfully created!' 
-      });
-      closeAddRoomTypeModal();
-      loadRoomTypes(); // Reload room types to update the list
-    } catch (error) {
-      setResultPopupInfo({ 
-        isOpen: true, 
-        type: 'error', 
-        title: 'Error Adding Room Type', 
-        message: error.message 
-      });
-    }
-  };
-
-  const closeResultPopup = () => {
-    setResultPopupInfo({ isOpen: false, type: '', message: '' });
-  };
-
-  const overallLoading = loadingBookings || creatingBooking || updatingBooking || deletingBooking || creatingRoom || creatingRoomType;
+  const statusOptions = [
+    { value: '', label: 'Tất cả trạng thái' },
+    { value: 'confirmed', label: 'Đã xác nhận' },
+    { value: 'checked_in', label: 'Đã nhận phòng' },
+    { value: 'checked_out', label: 'Đã trả phòng' },
+    { value: 'cancelled', label: 'Đã hủy' },
+    { value: 'pending', label: 'Chờ xử lý' }
+  ];
 
   return (
-    <div className={styles.bookingsPage}>
-      <FullScreenLoader isActive={overallLoading && !isFormModalOpen && !resultPopupInfo.isOpen} />
+    <div className={styles.container}>
       <ResultPopup 
-        isOpen={resultPopupInfo.isOpen}
-        onClose={closeResultPopup}
-        type={resultPopupInfo.type}
-        title={resultPopupInfo.title}
-        message={resultPopupInfo.message}
-      />      <header className={styles.header}>
-        <h1>Bookings Management</h1>
+        show={resultPopup.show}
+        onClose={() => setResultPopup({ show: false, type: '', message: '' })}
+        type={resultPopup.type}
+        message={resultPopup.message}
+      />      {/* Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Quản lý đặt phòng</h1>
         <div className={styles.headerButtons}>
-          <Button onClick={openAddRoomTypeModal} className={styles.addRoomTypeButton}>
-            <Layers size={18} /> Add Room Type
-          </Button>
-          <Button onClick={openAddRoomModal} className={styles.addRoomButton}>
-            <Home size={18} /> Add Room
-          </Button>
-          <Button onClick={() => openFormModal()} className={styles.addButton}>
-            <PlusCircle size={18} /> Add New Booking
-          </Button>
+          <button
+            onClick={handleCreate}
+            className={styles.addButton}
+          >
+            <Plus size={18} />
+            Thêm đặt phòng mới
+          </button>
         </div>
-      </header>
+      </div>      {/* Filters */}
+      <div className={styles.filters}>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Tìm kiếm</label>
+          <div className={styles.searchWrapper}>
+            <Search size={20} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo khách hàng, phòng hoặc mã đặt phòng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.filterInput}
+            />
+          </div>
+        </div>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Trạng thái</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={styles.filterSelect}
+          >
+            {statusOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>{/* Data Grid */}
+      <div className={styles.content}>
+        <DataGrid
+          data={filteredBookings}
+          columns={columns}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          emptyMessage="Không tìm thấy đặt phòng nào"
+        />
+      </div>
 
-      {fetchError && !loadingBookings && (
-        <div className={styles.errorFallback}>
-          <p>Could not load bookings: {fetchError.message}</p>
-          <Button onClick={loadBookings}>Try Again</Button>
-        </div>
-      )}
-
-      {!fetchError && (
-        <div className={styles.tableContainer}>
-          <table className={styles.bookingsTable}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Customer</th>
-                <th>Room</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.length > 0 ? bookings.map((booking) => (
-                <tr key={booking.bookingId}>
-                  <td>{booking.bookingId}</td>
-                  <td>{booking.customer?.name || `ID: ${booking.customerId}`}</td>
-                  <td>{booking.room?.roomNumber || `ID: ${booking.roomId}`}</td>
-                  <td>{new Date(booking.checkInTime).toLocaleString()}</td>
-                  <td>{new Date(booking.checkOutTime).toLocaleString()}</td>
-                  <td><span className={`${styles.statusBadge} ${styles[booking.status?.toLowerCase()]}`}>{booking.status}</span></td>
-                  <td>
-                    <Button onClick={() => openFormModal(booking)} className={`${styles.actionButton} ${styles.editButton}`} aria-label="Edit">
-                      <Edit size={16} />
-                    </Button>
-                    <Button onClick={() => handleDeleteBooking(booking.bookingId)} className={`${styles.actionButton} ${styles.deleteButton}`} aria-label="Delete" disabled={deletingBooking}>
-                      <Trash2 size={16} />
-                    </Button>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="7" className={styles.noBookingsText}>No bookings found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}      {isFormModalOpen && (
+      {/* Modals */}
+      {showModal && (
         <Modal 
-          isOpen={isFormModalOpen} 
-          onClose={closeFormModal} 
-          title={editingBooking ? 'Edit Booking' : 'Create New Booking'}
+          isOpen={showModal} 
+          onClose={() => setShowModal(false)} 
+          title={selectedBooking ? 'Chỉnh sửa đặt phòng' : 'Tạo đặt phòng mới'}
         >
           <BookingForm
             onSubmit={handleFormSubmit}
-            initialData={editingBooking ? {
-              ...editingBooking,
-              checkInTime: editingBooking.checkInTime ? new Date(editingBooking.checkInTime).toISOString().slice(0, 16) : '',
-              checkOutTime: editingBooking.checkOutTime ? new Date(editingBooking.checkOutTime).toISOString().slice(0, 16) : '',
+            initialData={selectedBooking ? {
+              ...selectedBooking,
+              checkInTime: selectedBooking.checkInTime ? new Date(selectedBooking.checkInTime).toISOString().slice(0, 16) : '',
+              checkOutTime: selectedBooking.checkOutTime ? new Date(selectedBooking.checkOutTime).toISOString().slice(0, 16) : '',
             } : { checkInTime: new Date().toISOString().slice(0,16) } }
-            isLoading={creatingBooking || updatingBooking}
-            onCancel={closeFormModal} // Pass cancel handler to form if it needs a cancel button
+            isLoading={loading}
+            onCancel={() => setShowModal(false)}
+            roomTypes={roomTypes}
+            rooms={rooms}
+            customers={customers}
           />
         </Modal>
-      )}      <AddRoomPopup
-        isOpen={isAddRoomModalOpen}
-        onClose={closeAddRoomModal}
-        onSubmit={handleAddRoom}
-        roomTypes={roomTypes}
-        isLoading={creatingRoom}
-      />
-
-      <AddRoomTypePopup
-        isOpen={isAddRoomTypeModalOpen}
-        onClose={closeAddRoomTypeModal}
-        onSubmit={handleAddRoomType}
-        isLoading={creatingRoomType}
-      />
+      )}
+      {/* Invoice Preview Modal */}
+      {showInvoicePreview && invoiceData && (
+        <Modal 
+          isOpen={showInvoicePreview} 
+          onClose={() => setShowInvoicePreview(false)} 
+          title={`Hóa đơn - Đặt phòng #${invoiceData.bookingId}`}
+          className={styles.invoiceModal}
+        >          <InvoicePreview
+            data={invoiceData}
+            onClose={() => setShowInvoicePreview(false)}
+            onSaveInvoice={handleSaveInvoice}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

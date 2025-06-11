@@ -1,8 +1,45 @@
+/* BookingForm.module.css */
+.formContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0;
+}
+
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px; /* Spacing between form groups */
-  padding: 20px; /* Padding inside the modal */
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.formSection {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.formSection:last-child {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #3b82f6;
+  display: inline-block;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.formRow:last-child {
+  margin-bottom: 0;
 }
 
 .formGroup {
@@ -12,83 +49,176 @@
 
 .label {
   font-weight: 500;
-  margin-bottom: 8px;
-  color: #333;
-  font-size: 0.95em;
+  color: #374151;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 2px;
 }
 
 .input,
-.select /* Assuming select might be used later or is part of a general style */ {
-  padding: 12px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1em;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  width: 100%; /* Ensure inputs take full width of their container */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+.select,
+.textarea {
+  padding: 12px 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
 }
 
 .input:focus,
-.select:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+.select:focus,
+.textarea:focus {
   outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input:read-only {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .inputError {
-  border-color: #dc3545; /* Red for error */
+  border-color: #ef4444;
 }
 
 .inputError:focus {
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.select {
+  cursor: pointer;
+}
+
+.select option {
+  padding: 8px;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
 .errorMessage {
-  color: #dc3545;
-  font-size: 0.85em;
-  margin-top: 5px;
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
 }
 
-/* Form Actions (Submit/Cancel Buttons) */
-.form-actions {
+.formActions {
+  padding: 24px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 15px; /* Add some space above the action buttons */
-  padding-top: 20px;
-  border-top: 1px solid #eee; /* Separator line */
+  gap: 12px;
+  border-radius: 0 0 12px 12px;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  border: 1.5px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .submitButton {
   padding: 10px 20px;
-  background-color: #28a745; /* Green */
+  background: #3b82f6;
   color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border: 1.5px solid #3b82f6;
+  border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.submitButton:hover {
-  background-color: #218838;
+.submitButton:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
 }
 
 .submitButton:disabled {
-  background-color: #a3d9b1;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.cancel-button {
-  background-color: #6c757d; /* Grey */
-  color: white;
-  padding: 10px 20px;
+/* Single column layout for smaller fields */
+.formRow.single {
+  grid-template-columns: 1fr;
 }
 
-.cancel-button:hover {
-  background-color: #5a6268;
+/* Full width for special cases */
+.formGroup.fullWidth {
+  grid-column: 1 / -1;
 }
 
-.cancel-button:disabled {
-  background-color: #b0b6bb;
+/* Responsive design */
+@media (max-width: 768px) {
+  .formContainer {
+    margin: 0;
+    padding: 0 16px;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .formSection {
+    padding: 20px;
+  }
+  
+  .formActions {
+    padding: 20px;
+    flex-direction: column-reverse;
+  }
+  
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionTitle {
+    font-size: 16px;
+  }
+  
+  .input,
+  .select,
+  .textarea {
+    padding: 10px 12px;
+  }
+  
+  .formSection {
+    padding: 16px;
+  }
+  
+  .formActions {
+    padding: 16px;
+  }
 }

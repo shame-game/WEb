@@ -1,27 +1,36 @@
-.container {
+/* Bookings.module.css */
+.bookingsPage {
   padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+  background: #f8fafc;
+  min-height: 100vh;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding: 24px 32px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.header h1 {
+  color: #1f2937;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .headerButtons {
   display: flex;
   gap: 12px;
   align-items: center;
-}
-
-.title {
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
 }
 
 .addButton {
@@ -717,8 +726,177 @@
   .statValue {
     font-size: 24px;
   }
-
   .wizardTitle {
     font-size: 20px;
   }
+}
+
+/* Additional CSS for DataGrid integration */
+.container {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.title {
+  color: #1f2937;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.searchWrapper .filterInput {
+  padding-left: 44px;
+}
+
+/* DataGrid cell content styling */
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customerName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.roomInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roomNumber {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.roomType {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dateInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkIn,
+.checkOut {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.checkIn {
+  color: #059669;
+}
+
+.checkOut {
+  color: #dc2626;
+}
+
+/* Action Buttons Styles */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.editButton,
+.deleteButton,
+.exportButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.editButton {
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.editButton:hover {
+  background: #0ea5e9;
+  color: white;
+}
+
+.deleteButton {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.deleteButton:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.exportButton {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.exportButton:hover {
+  background: #22c55e;
+  color: white;
+}
+
+/* Invoice Modal Styles */
+.invoiceModal {
+  max-width: 900px;
+}
+
+/* Invoiced Badge */
+.invoicedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 4px;
 }

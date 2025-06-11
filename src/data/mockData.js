@@ -486,6 +486,11 @@ export const mockInvoices = [
     bookingId: 1,
     customerName: 'Nguyễn Văn An',
     roomNumber: '102',
+    roomType: 'Deluxe Double',
+    checkInDate: '2024-11-25',
+    checkOutDate: '2024-11-29',
+    nights: 4,
+    roomPrice: 800000,
     issueDate: '2024-11-28',
     dueDate: '2024-12-02',
     subtotal: 3200000,
@@ -495,8 +500,8 @@ export const mockInvoices = [
     status: 'PAID',
     paymentMethod: 'CREDIT_CARD',
     items: [
-      { description: 'Room charge (4 nights)', amount: 3200000 },
-      { description: 'Service charge', amount: 0 }
+      { description: 'Room 102 - Deluxe Double (4 nights)', amount: 3200000 },
+      { description: 'Tax (10%)', amount: 320000 }
     ]
   },
   {
@@ -505,6 +510,11 @@ export const mockInvoices = [
     bookingId: 2,
     customerName: 'Trần Thị Bình',
     roomNumber: '201',
+    roomType: 'Executive Suite',
+    checkInDate: '2024-12-02',
+    checkOutDate: '2024-12-05',
+    nights: 3,
+    roomPrice: 1200000,
     issueDate: '2024-12-05',
     dueDate: '2024-12-08',
     subtotal: 3600000,
@@ -514,7 +524,32 @@ export const mockInvoices = [
     status: 'PENDING',
     paymentMethod: null,
     items: [
-      { description: 'Room charge (3 nights)', amount: 3600000 }
+      { description: 'Room 201 - Executive Suite (3 nights)', amount: 3600000 },
+      { description: 'Tax (10%)', amount: 360000 }
+    ]
+  },
+  {
+    id: 3,
+    invoiceId: 3,
+    bookingId: 5,
+    customerName: 'Lê Minh Hoàng',
+    roomNumber: '305',
+    roomType: 'Presidential Suite',
+    checkInDate: '2024-12-10',
+    checkOutDate: '2024-12-13',
+    nights: 3,
+    roomPrice: 2000000,
+    issueDate: '2024-12-13',
+    dueDate: '2024-12-16',
+    subtotal: 6000000,
+    taxAmount: 600000,
+    totalAmount: 6600000,
+    paidAmount: 3300000,
+    status: 'PARTIALLY_PAID',
+    paymentMethod: 'BANK_TRANSFER',
+    items: [
+      { description: 'Room 305 - Presidential Suite (3 nights)', amount: 6000000 },
+      { description: 'Tax (10%)', amount: 600000 }
     ]
   }
 ];

@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { DataGrid, StatusBadge, Modal, ModalButton, Form, FormField } from '../../components/UI';
-import { invoiceService, paymentService } from '../../services';
-import { formatCurrency, formatDate } from '../../utils/helpers';
-import { paymentSchema } from '../../utils/validationSchemas';
-import { Plus, Eye } from 'lucide-react';
+import { DataGrid, StatusBadge, Modal } from '../../components/UI';
+import { Plus, Eye, FileText, Download, Search } from 'lucide-react';
+import { mockInvoices } from '../../data/mockData';
+import styles from './Invoices.module.css';
 
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [payments, setPayments] = useState([]);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
     fetchInvoices();
@@ -19,8 +19,9 @@ const Invoices = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const response = await invoiceService.getAll();
-      setInvoices(response.data || []);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setInvoices(mockInvoices || []);
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
@@ -28,269 +29,349 @@ const Invoices = () => {
     }
   };
 
-  const fetchPayments = async (invoiceId) => {
-    try {
-      const response = await paymentService.getByInvoiceId(invoiceId);
-      setPayments(response.data);
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-      setPayments([]);
-    }
-  };
-
-  const handleViewInvoice = async (invoice) => {
+  const handleViewInvoice = (invoice) => {
     setSelectedInvoice(invoice);
-    await fetchPayments(invoice.invoiceId);
+    setShowInvoiceModal(true);
   };
 
-  const handleAddPayment = () => {
-    setShowPaymentModal(true);
+  const handlePrintInvoice = (invoice) => {
+    // Create printable content
+    const printContent = `
+      <html>
+        <head>
+          <title>Hóa đơn #${invoice.invoiceId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .details { margin: 20px 0; }
+            .table { width: 100%; border-collapse: collapse; }
+            .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .table th { background-color: #f2f2f2; }
+            .total { text-align: right; margin-top: 20px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>HÓA ĐƠN KHÁCH SẠN</h1>
+            <h2>Hóa đơn #${invoice.invoiceId}</h2>
+          </div>
+          <div class="details">
+            <p><strong>Khách hàng:</strong> ${invoice.customerName}</p>
+            <p><strong>Phòng:</strong> ${invoice.roomNumber} - ${invoice.roomType || ''}</p>
+            <p><strong>Ngày nhận phòng:</strong> ${invoice.checkInDate || ''}</p>
+            <p><strong>Ngày trả phòng:</strong> ${invoice.checkOutDate || ''}</p>
+            <p><strong>Số đêm:</strong> ${invoice.nights || ''}</p>
+            <p><strong>Ngày xuất hóa đơn:</strong> ${invoice.issueDate}</p>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Mô tả</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoice.items?.map(item => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td>1</td>
+                  <td>${item.amount?.toLocaleString('vi-VN')} VNĐ</td>
+                  <td>${item.amount?.toLocaleString('vi-VN')} VNĐ</td>
+                </tr>
+              `).join('') || ''}
+            </tbody>
+          </table>
+          <div class="total">
+            <p>Tổng cộng: ${invoice.totalAmount?.toLocaleString('vi-VN')} VNĐ</p>
+            <p>Trạng thái: ${getStatusText(invoice.status)}</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
   };
 
-  const handlePaymentSubmit = async (data) => {
-    try {
-      await paymentService.create({
-        ...data,
-        invoiceId: selectedInvoice.invoiceId
-      });
-      
-      // Refresh data
-      await fetchInvoices();
-      await fetchPayments(selectedInvoice.invoiceId);
-      setShowPaymentModal(false);
-    } catch (error) {
-      console.error('Error creating payment:', error);
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'PAID': return 'Đã thanh toán';
+      case 'PENDING': return 'Chờ thanh toán';
+      case 'PARTIALLY_PAID': return 'Thanh toán một phần';
+      case 'OVERDUE': return 'Quá hạn';
+      default: return status;
     }
   };
+
+  const getStatusVariant = (status) => {
+    switch (status) {
+      case 'PAID': return 'success';
+      case 'PENDING': return 'warning';
+      case 'PARTIALLY_PAID': return 'info';
+      case 'OVERDUE': return 'danger';
+      default: return 'secondary';
+    }
+  };
+
+  // Filter invoices
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = !searchTerm || 
+      invoice.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.invoiceId.toString().includes(searchTerm);
+    
+    const matchesStatus = !statusFilter || invoice.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // DataGrid columns configuration
   const columns = [
     {
       key: 'invoiceId',
-      title: 'Mã HĐ',
-      render: (value) => value ? `HD${value.toString().padStart(4, '0')}` : '-'
+      header: 'Mã hóa đơn',
+      width: '120px',
+      render: (value, invoice) => `#HD${invoice.invoiceId}`
     },
     {
       key: 'bookingId',
-      title: 'Mã booking',
-      render: (value) => value ? `BK${value.toString().padStart(4, '0')}` : '-'
+      header: 'Mã đặt phòng',
+      width: '120px',
+      render: (value, invoice) => `#${invoice.bookingId}`
+    },
+    {
+      key: 'customerName',
+      header: 'Khách hàng',
+      render: (value, invoice) => invoice.customerName
+    },
+    {
+      key: 'roomInfo',
+      header: 'Phòng',
+      render: (value, invoice) => (
+        <div>
+          <div>{invoice.roomNumber}</div>
+          <div className={styles.roomType}>{invoice.roomType}</div>
+        </div>
+      )
     },
     {
       key: 'issueDate',
-      title: 'Ngày xuất',
-      render: (value) => value ? formatDate(value, 'DD/MM/YYYY') : '-'
+      header: 'Ngày xuất',
+      width: '120px',
+      render: (value, invoice) => invoice.issueDate
     },
     {
       key: 'totalAmount',
-      title: 'Tổng tiền',
-      render: (value) => formatCurrency(value || 0)
-    },
-    {
-      key: 'taxAmount',
-      title: 'Thuế',
-      render: (value) => formatCurrency(value || 0)
+      header: 'Tổng tiền',
+      width: '120px',
+      render: (value, invoice) => `${invoice.totalAmount?.toLocaleString('vi-VN')} VNĐ`
     },
     {
       key: 'status',
-      title: 'Trạng thái',
-      render: (value) => <StatusBadge status={value || 'unknown'} type="invoice" />
+      header: 'Trạng thái',
+      width: '120px',
+      render: (value, invoice) => (
+        <StatusBadge 
+          status={invoice.status} 
+          variant={getStatusVariant(invoice.status)}
+        />
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Thao tác',
+      width: '120px',
+      render: (value, invoice) => (
+        <div className={styles.actions}>
+          <button 
+            onClick={() => handleViewInvoice(invoice)} 
+            className={styles.viewButton}
+            title="Xem chi tiết"
+          >
+            <Eye size={16} />
+          </button>
+          <button 
+            onClick={() => handlePrintInvoice(invoice)} 
+            className={styles.printButton}
+            title="In hóa đơn"
+          >
+            <FileText size={16} />
+          </button>
+        </div>
+      )
     }
   ];
 
-  const paymentMethods = [
-    { value: 'Cash', label: 'Tiền mặt' },
-    { value: 'CreditCard', label: 'Thẻ tín dụng' },
-    { value: 'BankTransfer', label: 'Chuyển khoản' },
-    { value: 'EWallet', label: 'Ví điện tử' }
+  const statusOptions = [
+    { value: '', label: 'Tất cả trạng thái' },
+    { value: 'PAID', label: 'Đã thanh toán' },
+    { value: 'PENDING', label: 'Chờ thanh toán' },
+    { value: 'PARTIALLY_PAID', label: 'Thanh toán một phần' },
+    { value: 'OVERDUE', label: 'Quá hạn' }
   ];
 
-  const remainingAmount = selectedInvoice ? 
-    selectedInvoice.totalAmount - payments.reduce((sum, p) => sum + p.amount, 0) : 0;
-
   return (
-    <div>
-      <DataGrid
-        title="Quản lý hóa đơn"
-        data={invoices}
-        columns={columns}
-        loading={loading}
-        onView={handleViewInvoice}
-        searchable={true}
-        sortable={true}
-      />
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>Quản lý hóa đơn</h1>
+      </div>
+
+      {/* Filters */}
+      <div className={styles.filters}>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Tìm kiếm</label>
+          <div className={styles.searchWrapper}>
+            <Search size={20} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo khách hàng, phòng hoặc mã hóa đơn..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.filterInput}
+            />
+          </div>
+        </div>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Trạng thái</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={styles.filterSelect}
+          >
+            {statusOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Data Grid */}
+      <div className={styles.content}>
+        <DataGrid
+          data={filteredInvoices}
+          columns={columns}
+          loading={loading}
+          emptyMessage="Không tìm thấy hóa đơn nào"
+        />
+      </div>
 
       {/* Invoice Detail Modal */}
-      <Modal
-        isOpen={!!selectedInvoice}
-        onClose={() => setSelectedInvoice(null)}
-        title={`Chi tiết hóa đơn HD${selectedInvoice?.invoiceId?.toString().padStart(4, '0')}`}
-        size="large"
-      >
-        {selectedInvoice && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Invoice Info */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-              gap: '1rem',
-              padding: '1rem',
-              backgroundColor: '#f9fafb',
-              borderRadius: '0.5rem'
-            }}>
-              <div>
-                <strong>Mã booking:</strong> BK{selectedInvoice.bookingId?.toString().padStart(4, '0')}
-              </div>
-              <div>
-                <strong>Ngày xuất:</strong> {formatDate(selectedInvoice.issueDate)}
-              </div>
-              <div>
-                <strong>Tổng tiền:</strong> {formatCurrency(selectedInvoice.totalAmount)}
-              </div>
-              <div>
-                <strong>Thuế:</strong> {formatCurrency(selectedInvoice.taxAmount)}
-              </div>
-              <div>
-                <strong>Trạng thái:</strong> <StatusBadge status={selectedInvoice.status} type="invoice" />
-              </div>
-              <div>
-                <strong>Còn nợ:</strong> 
-                <span style={{ color: remainingAmount > 0 ? '#ef4444' : '#10b981' }}>
-                  {formatCurrency(remainingAmount)}
-                </span>
-              </div>
-            </div>
-
-            {/* Payment History */}
-            <div>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '1rem'
-              }}>
-                <h4 style={{ margin: 0 }}>Lịch sử thanh toán</h4>
-                {remainingAmount > 0 && (
-                  <button
-                    onClick={handleAddPayment}
-                    style={{
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    <Plus size={16} />
-                    Thêm thanh toán
-                  </button>
-                )}
-              </div>
-
-              {payments.length === 0 ? (
-                <p style={{ color: '#6b7280', textAlign: 'center', padding: '1rem' }}>
-                  Chưa có thanh toán nào
-                </p>
-              ) : (
-                <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead style={{ backgroundColor: '#f9fafb' }}>
-                      <tr>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-                          Ngày
-                        </th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-                          Số tiền
-                        </th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-                          Phương thức
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.map((payment, index) => (
-                        <tr key={payment.paymentId} style={{ borderBottom: index < payments.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
-                          <td style={{ padding: '0.75rem' }}>
-                            {formatDate(payment.paymentDate, 'DD/MM/YYYY HH:mm')}
-                          </td>
-                          <td style={{ padding: '0.75rem' }}>
-                            {formatCurrency(payment.amount)}
-                          </td>
-                          <td style={{ padding: '0.75rem' }}>
-                            {paymentMethods.find(m => m.value === payment.paymentMethod)?.label || payment.paymentMethod}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Add Payment Modal */}
-      <Modal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        title="Thêm thanh toán"
-        footer={
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <ModalButton variant="secondary" onClick={() => setShowPaymentModal(false)}>
-              Hủy
-            </ModalButton>
-            <ModalButton type="submit" form="payment-form">
-              Lưu
-            </ModalButton>
-          </div>
-        }
-      >
-        <Form
-          id="payment-form"
-          onSubmit={handlePaymentSubmit}
-          validationSchema={paymentSchema}
-          defaultValues={{
-            amount: remainingAmount,
-            paymentMethod: '',
-            paymentDate: new Date().toISOString().slice(0, 16)
-          }}
+      {showInvoiceModal && selectedInvoice && (
+        <Modal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          title={`Chi tiết hóa đơn #HD${selectedInvoice.invoiceId}`}
+          className={styles.invoiceModal}
         >
-          {({ control, errors }) => (
-            <>
-              <FormField
-                name="amount"
-                label="Số tiền"
-                type="number"
-                step="1000"
-                min="1000"
-                max={remainingAmount}
-                required
-                control={control}
-                errors={errors}
-              />
-              <FormField
-                name="paymentMethod"
-                label="Phương thức thanh toán"
-                type="select"
-                options={paymentMethods}
-                required
-                control={control}
-                errors={errors}
-              />
-              <FormField
-                name="paymentDate"
-                label="Ngày thanh toán"
-                type="datetime-local"
-                required
-                control={control}
-                errors={errors}
-              />
-            </>
-          )}
-        </Form>
-      </Modal>
+          <div className={styles.invoiceDetail}>
+            {/* Invoice Info */}
+            <div className={styles.invoiceInfo}>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Mã đặt phòng:</span>
+                  <span className={styles.infoValue}>#{selectedInvoice.bookingId}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Khách hàng:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.customerName}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Phòng:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.roomNumber} - {selectedInvoice.roomType}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Ngày nhận phòng:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.checkInDate}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Ngày trả phòng:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.checkOutDate}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Số đêm:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.nights}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Ngày xuất hóa đơn:</span>
+                  <span className={styles.infoValue}>{selectedInvoice.issueDate}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Trạng thái:</span>
+                  <StatusBadge 
+                    status={selectedInvoice.status} 
+                    variant={getStatusVariant(selectedInvoice.status)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice Items */}
+            <div className={styles.invoiceItems}>
+              <h3>Chi tiết hóa đơn</h3>
+              <table className={styles.itemsTable}>
+                <thead>
+                  <tr>
+                    <th>Mô tả</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedInvoice.items?.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.description}</td>
+                      <td>1</td>
+                      <td>{item.amount?.toLocaleString('vi-VN')} VNĐ</td>
+                      <td>{item.amount?.toLocaleString('vi-VN')} VNĐ</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Invoice Total */}
+            <div className={styles.invoiceTotal}>
+              <div className={styles.totalRow}>
+                <span>Tạm tính:</span>
+                <span>{selectedInvoice.subtotal?.toLocaleString('vi-VN')} VNĐ</span>
+              </div>
+              <div className={styles.totalRow}>
+                <span>Thuế:</span>
+                <span>{selectedInvoice.taxAmount?.toLocaleString('vi-VN')} VNĐ</span>
+              </div>
+              <div className={`${styles.totalRow} ${styles.grandTotal}`}>
+                <span>Tổng cộng:</span>
+                <span>{selectedInvoice.totalAmount?.toLocaleString('vi-VN')} VNĐ</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className={styles.modalActions}>
+              <button 
+                onClick={() => handlePrintInvoice(selectedInvoice)} 
+                className={styles.printButton}
+              >
+                <FileText size={16} />
+                In hóa đơn
+              </button>
+              <button 
+                onClick={() => setShowInvoiceModal(false)} 
+                className={styles.closeButton}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
