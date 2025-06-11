@@ -1,0 +1,63 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.icon {
+  margin-bottom: 15px;
+}
+
+.success {
+  color: #28a745; /* Green */
+}
+
+.error {
+  color: #dc3545; /* Red */
+}
+
+.warning {
+  color: #ffc107; /* Yellow */
+}
+
+.message {
+  font-size: 1.1em;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.footer button {
+  margin-left: 10px;
+}
+
+/* Confirm button can use default Button styles or add specifics */
+.confirm-button {
+  background-color: #28a745; /* Green for confirm */
+}
+.confirm-button:hover {
+  background-color: #218838;
+}
+
+.close-button {
+  background-color: #6c757d; /* Grey for cancel/close */
+}
+.close-button:hover {
+  background-color: #5a6268;
+}
+
+/* Error button specifically for closing error popups */
+.error-button {
+  background-color: #dc3545; /* Red for error close */
+}
+.error-button:hover {
+  background-color: #c82333;
+}

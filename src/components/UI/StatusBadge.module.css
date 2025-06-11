@@ -1,0 +1,74 @@
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Room status colors */
+.statusBadge.available {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusBadge.booked {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge.maintenance {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+.statusBadge.occupied {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Booking status colors */
+.statusBadge.checkedIn {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusBadge.checkedOut {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.statusBadge.cancelled {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+/* Invoice status colors */
+.statusBadge.paid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusBadge.unpaid {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+/* Inventory status colors */
+.statusBadge.inStock {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusBadge.lowStock {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge.outOfStock {
+  background-color: #fecaca;
+  color: #991b1b;
+}

@@ -1,0 +1,94 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Spacing between form groups */
+  padding: 20px; /* Padding inside the modal */
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 0.95em;
+}
+
+.input,
+.select /* Assuming select might be used later or is part of a general style */ {
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1em;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  width: 100%; /* Ensure inputs take full width of their container */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.input:focus,
+.select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.inputError {
+  border-color: #dc3545; /* Red for error */
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.85em;
+  margin-top: 5px;
+}
+
+/* Form Actions (Submit/Cancel Buttons) */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px; /* Add some space above the action buttons */
+  padding-top: 20px;
+  border-top: 1px solid #eee; /* Separator line */
+}
+
+.submitButton {
+  padding: 10px 20px;
+  background-color: #28a745; /* Green */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+  background-color: #218838;
+}
+
+.submitButton:disabled {
+  background-color: #a3d9b1;
+}
+
+.cancel-button {
+  background-color: #6c757d; /* Grey */
+  color: white;
+  padding: 10px 20px;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.cancel-button:disabled {
+  background-color: #b0b6bb;
+}
